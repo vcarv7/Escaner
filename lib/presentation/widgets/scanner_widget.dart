@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import '../../core/constants/app_constants.dart';
+import '../../core/utils/validation_utils.dart';
+import 'snack_bar_helper.dart';
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
@@ -29,11 +32,6 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     super.dispose();
   }
 
-  bool _isValidSolapine(String value) {
-    final length = value.length;
-    return length >= 5 && length <= 15;
-  }
-
   void _handleDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
 
@@ -43,21 +41,19 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     final rawValue = barcodes.first.rawValue;
     if (rawValue == null || rawValue.isEmpty) return;
 
-    if (!_isValidSolapine(rawValue)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El código debe tener entre 5 y 15 caracteres'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+    final validationError = ValidationUtils.validateCode(rawValue);
+    if (validationError != null) {
+      if (mounted) SnackBarHelper.showError(context, validationError);
       return;
     }
 
     _isProcessing = true;
     widget.onSolapineScanned(rawValue);
 
-    Future.delayed(const Duration(seconds: 2), () {
-      _isProcessing = false;
+    Future.delayed(AppConstants.scanCooldown, () {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     });
   }
 
