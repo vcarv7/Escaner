@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../domain/entities/solapine_item.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../domain/entities/scan_item.dart';
+import '../../data/services/excel_service.dart';
 import '../widgets/scanner_widget.dart';
 import '../widgets/solapines_list.dart';
 import 'settings_page.dart';
@@ -13,15 +15,32 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final List<SolapineItem> _solapines = [];
+  final List<ScanItem> _items = [];
 
   bool _isValidSolapine(String value) {
     final length = value.length;
     return length >= 5 && length <= 15;
   }
 
-  void _onSolapineScanned(String solapine) {
-    if (!_isValidSolapine(solapine)) {
+  bool _isValidTarjeta(String value) {
+    if (value.length < 5 || value.length > 15) return false;
+    return RegExp(r'^[A-Za-z]+$').hasMatch(value);
+  }
+
+  ScanType _detectType(String code) {
+    if (_isValidTarjeta(code)) {
+      return ScanType.tarjeta;
+    }
+    return ScanType.solapine;
+  }
+
+  void _onItemScanned(String code) {
+    final type = _detectType(code);
+    final isValid = type == ScanType.solapine 
+        ? _isValidSolapine(code) 
+        : _isValidTarjeta(code);
+
+    if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('El código debe tener entre 5 y 15 caracteres'),
@@ -31,43 +50,51 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final existingIndex = _solapines.indexWhere((s) => s.code == solapine);
+    final existingIndex = _items.indexWhere((s) => s.code == code);
 
     if (existingIndex == -1) {
       setState(() {
-        _solapines.add(SolapineItem(
-          code: solapine,
+        _items.add(ScanItem(
+          code: code,
+          type: type,
           isDuplicate: false,
           scannedAt: DateTime.now(),
         ));
       });
+      final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Solapín $solapine escaneado'),
+          content: Text('$typeLabel $code escaneado'),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
+          duration: const Duration(milliseconds: 2300),
         ),
       );
     } else {
       setState(() {
-        _solapines[existingIndex] = SolapineItem(
-          code: solapine,
+        _items[existingIndex] = ScanItem(
+          code: code,
+          type: type,
           isDuplicate: true,
-          scannedAt: _solapines[existingIndex].scannedAt,
+          scannedAt: _items[existingIndex].scannedAt,
         );
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Solapín duplicado'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 1),
+          content: Text('Código duplicado'),
+          backgroundColor: Colors.red,
+          duration: Duration(milliseconds: 3500),
         ),
       );
     }
   }
 
-  void _addSolapineManually(String solapine) {
-    if (!_isValidSolapine(solapine)) {
+  void _addItemManually(String code) {
+    final type = _detectType(code);
+    final isValid = type == ScanType.solapine 
+        ? _isValidSolapine(code) 
+        : _isValidTarjeta(code);
+
+    if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('El código debe tener entre 5 y 15 caracteres'),
@@ -78,36 +105,39 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final existingIndex = _solapines.indexWhere((s) => s.code == solapine);
+    final existingIndex = _items.indexWhere((s) => s.code == code);
 
     if (existingIndex == -1) {
       setState(() {
-        _solapines.add(SolapineItem(
-          code: solapine,
+        _items.add(ScanItem(
+          code: code,
+          type: type,
           isDuplicate: false,
           scannedAt: DateTime.now(),
         ));
       });
+      final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Solapín $solapine agregado con éxito'),
+          content: Text('$typeLabel $code agregado con éxito'),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
+          duration: const Duration(milliseconds: 2300),
         ),
       );
     } else {
       setState(() {
-        _solapines[existingIndex] = SolapineItem(
-          code: solapine,
+        _items[existingIndex] = ScanItem(
+          code: code,
+          type: type,
           isDuplicate: true,
-          scannedAt: _solapines[existingIndex].scannedAt,
+          scannedAt: _items[existingIndex].scannedAt,
         );
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Solapín duplicado'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 1),
+          content: Text('Código duplicado'),
+          backgroundColor: Colors.red,
+          duration: Duration(milliseconds: 3500),
         ),
       );
     }
@@ -119,11 +149,11 @@ class _HomePageState extends State<HomePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Agregar solapín manualmente'),
+        title: const Text('Agregar código manualmente'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            hintText: 'Ingresa el código del solapín',
+            hintText: 'Ingresa el código',
             border: OutlineInputBorder(),
           ),
           textCapitalization: TextCapitalization.characters,
@@ -137,7 +167,7 @@ class _HomePageState extends State<HomePage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              _addSolapineManually(controller.text.trim());
+              _addItemManually(controller.text.trim());
             },
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.primary,
@@ -149,10 +179,97 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _clearAllSolapines() {
+  void _clearAllItems() {
     setState(() {
-      _solapines.clear();
+      _items.clear();
     });
+  }
+
+  Future<void> _importFromExcel() async {
+    final codes = await ExcelService.importFromExcel();
+
+    if (codes.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se encontraron códigos en el archivo'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    int added = 0;
+    for (final code in codes) {
+      final type = _detectType(code);
+      final isValid = type == ScanType.solapine 
+          ? _isValidSolapine(code) 
+          : _isValidTarjeta(code);
+      
+      if (!isValid) continue;
+
+      final existingIndex = _items.indexWhere((s) => s.code == code);
+
+      if (existingIndex == -1) {
+        _items.add(ScanItem(
+          code: code,
+          type: type,
+          isDuplicate: false,
+          scannedAt: DateTime.now(),
+        ));
+        added++;
+      } else {
+        _items[existingIndex] = _items[existingIndex].copyWith(
+          isDuplicate: true,
+        );
+        added++;
+      }
+    }
+
+    setState(() {});
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$added códigos importados'),
+          backgroundColor: Colors.green,
+          duration: const Duration(milliseconds: 2300),
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportToExcel() async {
+    if (_items.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No hay códigos para exportar'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final filePath = await ExcelService.exportToExcel(_items);
+
+    if (filePath != null) {
+      await Share.shareXFiles(
+        [XFile(filePath)],
+        text: 'Códigos escaneados',
+      );
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Excel preparado para compartir'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   @override
@@ -164,18 +281,30 @@ class _HomePageState extends State<HomePage> {
           child: Icon(Icons.restaurant),
         ),
         title: const Text('Escáner'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: _selectedIndex == 0 ? _importFromExcel : null,
+            tooltip: 'Importar desde Excel',
+          ),
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: _selectedIndex == 0 ? _exportToExcel : null,
+            tooltip: 'Exportar a Excel',
+          ),
+        ],
       ),
       body: _selectedIndex == 0
           ? Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: ScannerWidget(onSolapineScanned: _onSolapineScanned),
+                  padding: const EdgeInsets.all(8.0),
+                  child: ScannerWidget(onSolapineScanned: _onItemScanned),
                 ),
                 Expanded(
                   child: SolapinesList(
-                    solapines: _solapines,
-                    onClearAll: _clearAllSolapines,
+                    items: _items,
+                    onClearAll: _clearAllItems,
                   ),
                 ),
               ],
