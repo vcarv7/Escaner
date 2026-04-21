@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/date_utils.dart' as app_date;
 import '../../domain/entities/scan_item.dart';
 
 class ScanItemCard extends StatelessWidget {
@@ -27,7 +26,7 @@ class ScanItemCard extends StatelessWidget {
           child: Text(typeLabel),
         ),
         title: Text(item.code),
-        subtitle: Text(app_date.DateUtils.format(item.scannedAt)),
+        subtitle: Text(_formatDate(item.scannedAt)),
         trailing: _buildTrailing(context),
       ),
     );
@@ -45,6 +44,10 @@ class ScanItemCard extends StatelessWidget {
       return Colors.white;
     }
     return Theme.of(context).colorScheme.onPrimary;
+  }
+
+  static String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   Widget? _buildTrailing(BuildContext context) {

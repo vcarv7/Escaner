@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/constants/app_constants.dart';
@@ -14,8 +15,9 @@ class ScannerWidget extends StatefulWidget {
 }
 
 class _ScannerWidgetState extends State<ScannerWidget> {
-  MobileScannerController? _controller;
+  late MobileScannerController _controller;
   bool _isProcessing = false;
+  Timer? _cooldownTimer;
 
   @override
   void initState() {
@@ -28,7 +30,8 @@ class _ScannerWidgetState extends State<ScannerWidget> {
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _cooldownTimer?.cancel();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -50,10 +53,9 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     _isProcessing = true;
     widget.onSolapineScanned(rawValue);
 
-    Future.delayed(AppConstants.scanCooldown, () {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer(AppConstants.scanCooldown, () {
+      if (mounted) setState(() => _isProcessing = false);
     });
   }
 

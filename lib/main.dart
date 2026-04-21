@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
-import 'domain/entities/scan_item.dart';
+import 'presentation/providers/scan_provider.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
@@ -15,16 +16,13 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Escáner',
-      theme: AppTheme.theme,
-      debugShowCheckedModeBanner: false,
-      home: FutureBuilder<List<ScanItem>>(
-        future: StorageService.loadItems(),
-        builder: (context, snapshot) {
-          final items = snapshot.data ?? [];
-          return HomePage(initialItems: items);
-        },
+    return ChangeNotifierProvider(
+      create: (_) => ScanProvider(),
+      child: MaterialApp(
+        title: 'Escáner',
+        theme: AppTheme.theme,
+        debugShowCheckedModeBanner: false,
+        home: const HomePage(),
       ),
     );
   }

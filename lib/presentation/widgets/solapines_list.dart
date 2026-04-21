@@ -1,27 +1,112 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/scan_item.dart';
+import '../providers/scan_provider.dart';
 import 'scan_item_card.dart';
 
-class SolapinesList extends StatelessWidget {
-  final List<ScanItem> items;
-  final VoidCallback onClearAll;
+class SolapinesList extends StatefulWidget {
+  final ScanProvider provider;
 
-  const SolapinesList({
-    super.key,
-    required this.items,
-    required this.onClearAll,
-  });
+  const SolapinesList({super.key, required this.provider});
+
+  @override
+  State<SolapinesList> createState() => _SolapinesListState();
+}
+
+class _SolapinesListState extends State<SolapinesList> {
+  final ScrollController _scrollController = ScrollController();
+  final List<ScanItem> _displayedItems = [];
+  bool _isLoadingMore = false;
+  bool _showScrollTopButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    _loadPage(1);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoadingMore && widget.provider.hasMoreData) {
+        _loadNextPage();
+      }
+    }
+    if (!_showScrollTopButton && _scrollController.offset > 500) {
+      setState(() => _showScrollTopButton = true);
+    } else if (_showScrollTopButton && _scrollController.offset <= 500) {
+      setState(() => _showScrollTopButton = false);
+    }
+  }
+
+  void _loadPage(int page) {
+    _displayedItems.clear();
+    _displayedItems.addAll(widget.provider.getItemsPage(page));
+  }
+
+  void _loadNextPage() {
+    setState(() => _isLoadingMore = true);
+    final nextPage = widget.provider.currentPage + 1;
+    final newItems = widget.provider.getItemsPage(nextPage);
+    if (newItems.isEmpty) {
+      setState(() => _isLoadingMore = false);
+      return;
+    }
+    _displayedItems.addAll(newItems);
+    widget.provider.resetPagination();
+    setState(() => _isLoadingMore = false);
+  }
+
+  void _scrollToTop() {
+    _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
+
+  int _getSolapineCount() {
+    int count = 0;
+    for (final item in _displayedItems) {
+      if (item.type == ScanType.solapine) count++;
+    }
+    return count;
+  }
+
+  int _getTarjetaCount() {
+    int count = 0;
+    for (final item in _displayedItems) {
+      if (item.type == ScanType.tarjeta) count++;
+    }
+    return count;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final solapineCount = items.where((i) => i.type == ScanType.solapine).length;
-    final tarjetaCount = items.where((i) => i.type == ScanType.tarjeta).length;
+    final solapineCount = _getSolapineCount();
+    final tarjetaCount = _getTarjetaCount();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
       children: [
-        _buildHeader(context, solapineCount, tarjetaCount),
-        Expanded(child: _buildList(context)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(context, solapineCount, tarjetaCount),
+            Expanded(child: _buildList(context)),
+          ],
+        ),
+        if (_showScrollTopButton)
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton.small(
+              heroTag: 'scrollTop',
+              onPressed: _scrollToTop,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            ),
+          ),
       ],
     );
   }
@@ -32,11 +117,8 @@ class SolapinesList extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            '$solapineCount solapines y $tarjetaCount tarjetas',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (items.isNotEmpty)
+          Text(_getCountText(solapineCount, tarjetaCount), style: Theme.of(context).textTheme.titleMedium),
+          if (_displayedItems.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () => _showClearConfirmation(context),
@@ -47,15 +129,45 @@ class SolapinesList extends StatelessWidget {
     );
   }
 
+  String _getCountText(int solapineCount, int tarjetaCount) {
+    final solapinText = solapineCount == 1 ? 'Solapín' : 'Solapines';
+    final tarjetaText = tarjetaCount == 1 ? 'Tarjeta' : 'Tarjetas';
+    if (solapineCount == 0 && tarjetaCount == 0) return 'Sin códigos';
+    if (solapineCount == 0) return '$tarjetaCount $tarjetaText';
+    if (tarjetaCount == 0) return '$solapineCount $solapinText';
+    return '$solapineCount $solapinText y $tarjetaCount $tarjetaText';
+  }
+
   Widget _buildList(BuildContext context) {
-    if (items.isEmpty) {
+    if (_displayedItems.isEmpty) {
       return const Center(child: Text('No hay códigos escaneados'));
     }
 
     return ListView.builder(
-      itemCount: items.length,
+      controller: _scrollController,
+      itemCount: _displayedItems.length + (_isLoadingMore ? 1 : 0),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemBuilder: (context, index) => ScanItemCard(item: items[index]),
+      itemBuilder: (context, index) {
+        if (index >= _displayedItems.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final item = _displayedItems[index];
+        return Dismissible(
+          key: ValueKey(item.code),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            color: Colors.orange,
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          onDismissed: (_) => widget.provider.deleteItem(item),
+          child: ScanItemCard(item: item),
+        );
+      },
     );
   }
 
@@ -66,18 +178,14 @@ class SolapinesList extends StatelessWidget {
         title: const Text('Eliminar todos los códigos'),
         content: const Text('¿Estás seguro de que quieres eliminar todos los códigos escaneados?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancelar')),
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              onClearAll();
+              widget.provider.clearAll();
+              _displayedItems.clear();
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.primary,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
             child: const Text('Eliminar'),
           ),
         ],

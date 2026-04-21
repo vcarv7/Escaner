@@ -2,8 +2,8 @@ import '../../domain/entities/scan_item.dart';
 import '../constants/app_constants.dart';
 
 class ValidationUtils {
-  static int minLength = AppConstants.minCodeLength;
-  static int maxLength = AppConstants.maxCodeLength;
+  static int get minLength => AppConstants.minCodeLength;
+  static int get maxLength => AppConstants.maxCodeLength;
 
   static bool isValidSolapine(String value) {
     if (value.isEmpty) return false;
