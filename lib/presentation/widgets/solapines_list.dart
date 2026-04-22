@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 import 'scan_item_card.dart';
@@ -14,7 +15,6 @@ class SolapinesList extends StatefulWidget {
 
 class _SolapinesListState extends State<SolapinesList> {
   final ScrollController _scrollController = ScrollController();
-  final List<ScanItem> _displayedItems = [];
   bool _isLoadingMore = false;
   bool _showScrollTopButton = false;
 
@@ -22,7 +22,6 @@ class _SolapinesListState extends State<SolapinesList> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadPage(1);
   }
 
   @override
@@ -44,11 +43,6 @@ class _SolapinesListState extends State<SolapinesList> {
     }
   }
 
-  void _loadPage(int page) {
-    _displayedItems.clear();
-    _displayedItems.addAll(widget.provider.getItemsPage(page));
-  }
-
   void _loadNextPage() {
     setState(() => _isLoadingMore = true);
     final nextPage = widget.provider.currentPage + 1;
@@ -57,7 +51,6 @@ class _SolapinesListState extends State<SolapinesList> {
       setState(() => _isLoadingMore = false);
       return;
     }
-    _displayedItems.addAll(newItems);
     widget.provider.resetPagination();
     setState(() => _isLoadingMore = false);
   }
@@ -66,59 +59,48 @@ class _SolapinesListState extends State<SolapinesList> {
     _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
   }
 
-  int _getSolapineCount() {
-    int count = 0;
-    for (final item in _displayedItems) {
-      if (item.type == ScanType.solapine) count++;
-    }
-    return count;
-  }
-
-  int _getTarjetaCount() {
-    int count = 0;
-    for (final item in _displayedItems) {
-      if (item.type == ScanType.tarjeta) count++;
-    }
-    return count;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final solapineCount = _getSolapineCount();
-    final tarjetaCount = _getTarjetaCount();
+    return Consumer<ScanProvider>(
+      builder: (context, provider, _) {
+        final items = provider.items;
+        final solapineCount = items.where((item) => item.type == ScanType.solapine).length;
+        final tarjetaCount = items.where((item) => item.type == ScanType.tarjeta).length;
 
-    return Stack(
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Stack(
           children: [
-            _buildHeader(context, solapineCount, tarjetaCount),
-            Expanded(child: _buildList(context)),
-          ],
-        ),
-        if (_showScrollTopButton)
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: FloatingActionButton.small(
-              heroTag: 'scrollTop',
-              onPressed: _scrollToTop,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: const Icon(Icons.arrow_upward, color: Colors.white),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, solapineCount, tarjetaCount, items.isNotEmpty),
+                Expanded(child: _buildList(context, items)),
+              ],
             ),
-          ),
-      ],
+            if (_showScrollTopButton)
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: FloatingActionButton.small(
+                  heroTag: 'scrollTop',
+                  onPressed: _scrollToTop,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: const Icon(Icons.arrow_upward, color: Colors.white),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount) {
+  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount, bool hasItems) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(_getCountText(solapineCount, tarjetaCount), style: Theme.of(context).textTheme.titleMedium),
-          if (_displayedItems.isNotEmpty)
+          if (hasItems)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: () => _showClearConfirmation(context),
@@ -138,23 +120,23 @@ class _SolapinesListState extends State<SolapinesList> {
     return '$solapineCount $solapinText y $tarjetaCount $tarjetaText';
   }
 
-  Widget _buildList(BuildContext context) {
-    if (_displayedItems.isEmpty) {
+  Widget _buildList(BuildContext context, List<ScanItem> items) {
+    if (items.isEmpty) {
       return const Center(child: Text('No hay códigos escaneados'));
     }
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: _displayedItems.length + (_isLoadingMore ? 1 : 0),
+      itemCount: items.length + (_isLoadingMore ? 1 : 0),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemBuilder: (context, index) {
-        if (index >= _displayedItems.length) {
+        if (index >= items.length) {
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final item = _displayedItems[index];
+        final item = items[index];
         return Dismissible(
           key: ValueKey(item.code),
           direction: DismissDirection.endToStart,
@@ -183,7 +165,6 @@ class _SolapinesListState extends State<SolapinesList> {
             onPressed: () {
               Navigator.of(context).pop();
               widget.provider.clearAll();
-              _displayedItems.clear();
             },
             style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
             child: const Text('Eliminar'),

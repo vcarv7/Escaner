@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
-import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -165,15 +164,18 @@ class _AppDrawerState extends State<AppDrawer> with SingleTickerProviderStateMix
                 child: Text('La papelera está vacía', style: TextStyle(color: Colors.grey)),
               )
             else ...[
-              ...trashItems.map((item) => ListTile(
-                leading: Icon(item.type == ScanType.solapine ? Icons.badge : Icons.credit_card, size: 20, color: Colors.grey),
-                title: Text(item.code),
-                trailing: IconButton(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ElevatedButton.icon(
+                  onPressed: trashItems.isEmpty ? null : () => provider.restoreAll(),
                   icon: const Icon(Icons.restore, size: 20),
-                  onPressed: () => provider.restoreItem(item),
-                  tooltip: 'Restaurar',
+                  label: Text('Restaurar todos (${trashItems.length})'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
-              )),
+              ),
               Padding(
                 padding: const EdgeInsets.all(8),
                 child: TextButton.icon(

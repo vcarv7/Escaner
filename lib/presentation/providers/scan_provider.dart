@@ -72,6 +72,12 @@ class ScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void restoreAll() {
+    for (final item in List.from(_trashItems)) {
+      restoreItem(item);
+    }
+  }
+
   void clearAll() {
     _trashItems.addAll(_items);
     _items.clear();
