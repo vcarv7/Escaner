@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
-import 'scan_item_card.dart';
+import 'scan_item/scan_item_constants.dart';
+import 'scan_item/scan_item_card.dart';
 
 class SolapinesList extends StatefulWidget {
   final ScanProvider provider;
 
-  const SolapinesList({super.key, required this.provider});
+  const SolapinesList({
+    super.key,
+    required this.provider,
+  });
 
   @override
   State<SolapinesList> createState() => _SolapinesListState();
@@ -99,7 +103,10 @@ class _SolapinesListState extends State<SolapinesList> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(_getCountText(solapineCount, tarjetaCount), style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            ScanItemConstants.getCountText(solapineCount, tarjetaCount),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           if (hasItems)
             IconButton(
               icon: const Icon(Icons.delete_outline),
@@ -109,15 +116,6 @@ class _SolapinesListState extends State<SolapinesList> {
         ],
       ),
     );
-  }
-
-  String _getCountText(int solapineCount, int tarjetaCount) {
-    final solapinText = solapineCount == 1 ? 'Solapín' : 'Solapines';
-    final tarjetaText = tarjetaCount == 1 ? 'Tarjeta' : 'Tarjetas';
-    if (solapineCount == 0 && tarjetaCount == 0) return 'Sin códigos';
-    if (solapineCount == 0) return '$tarjetaCount $tarjetaText';
-    if (tarjetaCount == 0) return '$solapineCount $solapinText';
-    return '$solapineCount $solapinText y $tarjetaCount $tarjetaText';
   }
 
   Widget _buildList(BuildContext context, List<ScanItem> items) {

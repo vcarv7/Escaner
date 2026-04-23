@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
 import 'presentation/providers/scan_provider.dart';
+import 'presentation/providers/settings_provider.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
@@ -16,13 +17,22 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ScanProvider(),
-      child: MaterialApp(
-        title: 'Escáner',
-        theme: AppTheme.theme,
-        debugShowCheckedModeBanner: false,
-        home: const HomePage(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ScanProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()..init()),
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
+          return MaterialApp(
+            title: 'Escáner',
+            theme: AppTheme.getTheme(false),
+            darkTheme: AppTheme.getTheme(true),
+            themeMode: settings.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
+            debugShowCheckedModeBanner: false,
+            home: const HomePage(),
+          );
+        },
       ),
     );
   }

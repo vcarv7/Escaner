@@ -3,12 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
-import 'snack_bar_helper.dart';
+import 'overlay/overlay_message.dart';
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
+  final VoidCallback? onScan;
 
-  const ScannerWidget({super.key, required this.onSolapineScanned});
+  const ScannerWidget({
+    super.key,
+    required this.onSolapineScanned,
+    this.onScan,
+  });
 
   @override
   State<ScannerWidget> createState() => _ScannerWidgetState();
@@ -46,12 +51,13 @@ class _ScannerWidgetState extends State<ScannerWidget> {
 
     final validationError = ValidationUtils.validateCode(rawValue);
     if (validationError != null) {
-      if (mounted) SnackBarHelper.showError(context, validationError);
+      OverlayMessage.error(context, validationError);
       return;
     }
 
     _isProcessing = true;
     widget.onSolapineScanned(rawValue);
+    widget.onScan?.call();
 
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer(AppConstants.scanCooldown, () {
