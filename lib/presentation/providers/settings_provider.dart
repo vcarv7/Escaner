@@ -41,7 +41,7 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> triggerScanFeedback() async {
     switch (_scanFeedback) {
       case ScanFeedback.sound:
-        await _audioPlayer.play(AssetSource('scan_sound.mp3'));
+        await _audioPlayer.play(AssetSource('sounds/scan_sound.mp3'));
         break;
       case ScanFeedback.vibration:
         final hasVibrator = await Vibration.hasVibrator();

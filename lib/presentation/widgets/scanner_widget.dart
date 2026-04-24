@@ -43,25 +43,35 @@ class _ScannerWidgetState extends State<ScannerWidget> {
   void _handleDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
 
+    _isProcessing = true;
+    setState(() {});
+
     final barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
 
     final rawValue = barcodes.first.rawValue;
-    if (rawValue == null || rawValue.isEmpty) return;
+    if (rawValue == null || rawValue.isEmpty) {
+      _isProcessing = false;
+      setState(() {});
+      return;
+    }
 
     final validationError = ValidationUtils.validateCode(rawValue);
     if (validationError != null) {
       OverlayMessage.error(context, validationError);
+      _isProcessing = false;
+      setState(() {});
       return;
     }
 
-    _isProcessing = true;
     widget.onSolapineScanned(rawValue);
     widget.onScan?.call();
 
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer(AppConstants.scanCooldown, () {
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
     });
   }
 
@@ -75,9 +85,34 @@ class _ScannerWidgetState extends State<ScannerWidget> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: MobileScanner(
-          controller: _controller,
-          onDetect: _handleDetect,
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: _controller,
+              onDetect: _handleDetect,
+            ),
+            if (_isProcessing)
+              Container(
+                color: Colors.black54,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Escáner en pausa...',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

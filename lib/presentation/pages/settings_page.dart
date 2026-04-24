@@ -1,23 +1,13 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:yaml/yaml.dart';
-import 'package:path_provider/path_provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../providers/settings_provider.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  Future<String> _getVersion() async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/../pubspec.yaml');
-      final content = file.readAsStringSync();
-      final yaml = loadYaml(content);
-      return yaml['version']?.toString() ?? '0.1.0';
-    } catch (e) {
-      return '0.1.0';
-    }
+  String _getVersion() {
+    return AppConstants.appVersion;
   }
 
   @override
@@ -165,18 +155,13 @@ class SettingsPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          FutureBuilder<String>(
-            future: _getVersion(),
-            builder: (context, snapshot) {
-              return ListTile(
-                leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
-                title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-                trailing: Text(
-                  snapshot.data ?? 'Cargando...',
-                  style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
-                ),
-              );
-            },
+          ListTile(
+            leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
+            title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+            trailing: Text(
+              _getVersion(),
+              style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+            ),
           ),
           Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
           ListTile(
