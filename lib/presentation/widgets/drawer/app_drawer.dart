@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:escaner_1/data/services/excel_service.dart';
 import 'package:escaner_1/presentation/providers/scan_provider.dart';
 import 'package:escaner_1/presentation/providers/auth_provider.dart';
@@ -69,7 +70,7 @@ class _AppDrawerState extends State<AppDrawer>
 
     if (!mounted) return;
     if (filePath != null) {
-      OverlayMessage.success(context, 'Códigos exportados');
+      await Share.shareXFiles([XFile(filePath)], text: 'Códigos exportados');
     } else {
       OverlayMessage.error(context, 'Error al exportar');
     }

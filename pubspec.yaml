@@ -13,6 +13,7 @@ dependencies:
   excel_community: ^1.0.9
   file_picker: ^8.1.7
   path_provider: ^2.1.5
+  share_plus: ^10.0.0
   shared_preferences: ^2.3.5
   provider: ^6.1.2
   audioplayers: ^6.0.0
