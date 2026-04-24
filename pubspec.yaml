@@ -32,5 +32,8 @@ flutter:
     - assets/sounds/
 
 flutter_launcher_icons:
-  android: "ic_launcher"
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/logo 2.png"
+  android:
+    image_path: "assets/images/logo 2.png"
+    adaptive_icon_background: "#FFFFFF"
+    adaptive_icon_foreground: "assets/images/logo 2.png"
