@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:escaner_1/data/services/excel_service.dart';
+import 'package:escaner_1/presentation/providers/scan_provider.dart';
 import 'package:escaner_1/presentation/providers/auth_provider.dart';
 import 'package:escaner_1/presentation/widgets/overlay/overlay_message.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_constants.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_menu_item.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_profile_section.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_trash_section.dart';
-import 'package:escaner_1/presentation/pages/login_page.dart';
-import 'package:escaner_1/presentation/pages/admin_panel_page.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -38,11 +37,9 @@ class _AppDrawerState extends State<AppDrawer>
   }
 
   Future<void> _importFromExcel() async {
-    final provider = context.read<AuthProvider>();
-    if (!provider.isAuthenticated) {
-      OverlayMessage.warning(context, 'Debes iniciar sesión para importar');
-      return;
-    }
+    if (!mounted) return;
+    final scanProvider = context.read<ScanProvider>();
+    
     final codes = await ExcelService.importFromExcel();
 
     if (codes.isEmpty) {
@@ -51,32 +48,45 @@ class _AppDrawerState extends State<AppDrawer>
       return;
     }
 
+    scanProvider.importCodes(codes);
+
     if (!mounted) return;
     OverlayMessage.success(context, '${codes.length} códigos importados');
   }
 
   Future<void> _exportToExcel() async {
     if (!mounted) return;
-    OverlayMessage.warning(context, 'Primero escanea códigos');
+    final scanProvider = context.read<ScanProvider>();
+    final items = scanProvider.items;
+
+    if (items.isEmpty) {
+      if (!mounted) return;
+      OverlayMessage.warning(context, 'No hay códigos para exportar');
+      return;
+    }
+
+    final filePath = await ExcelService.exportToExcel(items);
+
+    if (!mounted) return;
+    if (filePath != null) {
+      OverlayMessage.success(context, 'Códigos exportados');
+    } else {
+      OverlayMessage.error(context, 'Error al exportar');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
             Consumer<AuthProvider>(
               builder: (context, authProvider, _) {
-                final user = authProvider.currentUser;
-                return DrawerProfileSection(
-                  userName: user?.username ?? DrawerConstants.defaultUserName,
-                  userEmail: user?.isAdmin == true 
-                      ? 'Administrador' 
-                      : 'Usuario',
-                  isAuthenticated: authProvider.isAuthenticated,
+                return const DrawerProfileSection(
+                  userName: DrawerConstants.defaultUserName,
+                  userEmail: 'Invitado',
+                  isAuthenticated: false,
                 );
               },
             ),
@@ -100,55 +110,14 @@ class _AppDrawerState extends State<AppDrawer>
   }
 
   Widget _buildAuthSection(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isAuthenticated) {
-          return Column(
-            children: [
-              DrawerMenuItem(
-                icon: Icons.admin_panel_settings,
-                title: 'Administración',
-                subtitle: 'Gestionar usuarios',
-                onTap: () {
-                  if (!authProvider.isAdmin) {
-                    OverlayMessage.warning(context, 'No tienes permisos de admin');
-                    return;
-                  }
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AdminPanelPage()),
-                  );
-                },
-                isPrimary: authProvider.isAdmin,
-              ),
-              DrawerMenuItem(
-                icon: Icons.logout,
-                title: 'Cerrar Sesión',
-                subtitle: authProvider.currentUser?.username ?? 'Usuario',
-                onTap: () async {
-                  await authProvider.logout();
-                  if (!mounted) return;
-                  OverlayMessage.success(context, 'Sesión cerrada');
-                },
-                isPrimary: true,
-              ),
-            ],
-          );
-        }
-
-        return DrawerMenuItem(
-          icon: Icons.login,
-          title: 'Iniciar Sesión',
-          subtitle: 'Acceder a la aplicación',
-          onTap: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const LoginPage()),
-            );
-          },
-          isPrimary: true,
-        );
+    return DrawerMenuItem(
+      icon: Icons.login,
+      title: 'Iniciar Sesión',
+      subtitle: 'Próximamente disponible',
+      onTap: () {
+        OverlayMessage.info(context, 'Función en desarrollo');
       },
+      isPrimary: true,
     );
   }
 

@@ -38,14 +38,14 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = !provider.items.any((s) => s.code == code);
     provider.addItem(code);
-    if (isNew) {
-      final type = ValidationUtils.detectType(code);
-      final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
-      OverlayMessage.success(context, '$typeLabel $code escaneado');
-    } else {
+    final isDuplicate = provider.items.any((s) => s.code == code && s.isDuplicate);
+    final type = ValidationUtils.detectType(code);
+    final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
+    if (isDuplicate) {
       OverlayMessage.error(context, 'Código duplicado');
+    } else {
+      OverlayMessage.success(context, '$typeLabel $code escaneado');
     }
   }
 
@@ -55,14 +55,14 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = !provider.items.any((s) => s.code == code);
     provider.addItem(code);
-    if (isNew) {
-      final type = ValidationUtils.detectType(code);
-      final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
-      OverlayMessage.success(context, '$typeLabel $code agregado');
-    } else {
+    final isDuplicate = provider.items.any((s) => s.code == code && s.isDuplicate);
+    final type = ValidationUtils.detectType(code);
+    final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
+    if (isDuplicate) {
       OverlayMessage.error(context, 'Código duplicado');
+    } else {
+      OverlayMessage.success(context, '$typeLabel $code agregado');
     }
   }
 

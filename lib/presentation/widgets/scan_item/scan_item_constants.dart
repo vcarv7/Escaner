@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/date_utils.dart' as app_date;
 
 class ScanItemColors {
   static const Color solapine = AppTheme.primary;
@@ -25,14 +26,7 @@ class ScanItemConstants {
   static const double cardMargin = 8.0;
   static const double avatarRadius = 20.0;
 
-  static String formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString().substring(2);
-    final hour = date.hour.toString().padLeft(2, '0');
-    final minute = date.minute.toString().padLeft(2, '0');
-    return '$day/$month/$year $hour:$minute';
-  }
+  static String formatDate(DateTime date) => app_date.DateUtils.formatDate(date);
 
   static String getCountText(int solapineCount, int tarjetaCount) {
     final solapinText = solapineCount == 1 ? solapineName : solapinesPlural;

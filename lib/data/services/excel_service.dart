@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:excel_community/excel_community.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../core/utils/date_utils.dart';
 import '../../domain/entities/scan_item.dart';
 
 class ExcelService {
@@ -78,7 +79,7 @@ class ExcelService {
 
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(item.code);
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(item.type == ScanType.solapine ? 'solapine' : 'tarjeta');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(_formatDate(item.scannedAt));
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(DateUtils.formatDate(item.scannedAt));
       }
 
       final directory = await getApplicationDocumentsDirectory();
@@ -94,9 +95,5 @@ class ExcelService {
     } catch (e) {
       return null;
     }
-  }
-
-  static String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
