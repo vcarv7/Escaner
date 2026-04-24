@@ -31,23 +31,26 @@ class ScanProvider extends ChangeNotifier {
     return _items.sublist(start, end.clamp(0, _items.length));
   }
 
-  void addItem(String code) {
-    if (!ValidationUtils.isValidCode(code)) return;
+  bool addItem(String code) {
+    if (!ValidationUtils.isValidCode(code)) return false;
     final type = ValidationUtils.detectType(code);
     final existingIndex = _items.indexWhere((s) => s.code == code);
     if (existingIndex != -1) {
       _items[existingIndex] = _items[existingIndex].copyWith(isDuplicate: true);
-    } else {
-      _items.add(ScanItem(
-        code: code,
-        type: type,
-        isDuplicate: false,
-        scannedAt: DateTime.now(),
-      ));
+      _saveItems();
+      notifyListeners();
+      return false;
     }
+    _items.add(ScanItem(
+      code: code,
+      type: type,
+      isDuplicate: false,
+      scannedAt: DateTime.now(),
+    ));
     _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
     _saveItems();
     notifyListeners();
+    return true;
   }
 
   void deleteItem(ScanItem item) {

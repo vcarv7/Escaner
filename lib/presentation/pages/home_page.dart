@@ -38,14 +38,13 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    provider.addItem(code);
-    final isDuplicate = provider.items.any((s) => s.code == code && s.isDuplicate);
+    final isNew = provider.addItem(code);
     final type = ValidationUtils.detectType(code);
     final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
-    if (isDuplicate) {
-      OverlayMessage.error(context, 'Código duplicado');
-    } else {
+    if (isNew) {
       OverlayMessage.success(context, '$typeLabel $code escaneado');
+    } else {
+      OverlayMessage.error(context, 'Código duplicado');
     }
   }
 
@@ -55,14 +54,13 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    provider.addItem(code);
-    final isDuplicate = provider.items.any((s) => s.code == code && s.isDuplicate);
+    final isNew = provider.addItem(code);
     final type = ValidationUtils.detectType(code);
     final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
-    if (isDuplicate) {
-      OverlayMessage.error(context, 'Código duplicado');
-    } else {
+    if (isNew) {
       OverlayMessage.success(context, '$typeLabel $code agregado');
+    } else {
+      OverlayMessage.error(context, 'Código duplicado');
     }
   }
 
