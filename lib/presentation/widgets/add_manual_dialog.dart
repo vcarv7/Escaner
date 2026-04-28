@@ -15,18 +15,24 @@ class AddManualDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = TextEditingController();
+    final viewInsets = MediaQuery.of(context).viewInsets;
 
     return AlertDialog(
       title: const Text('Agregar código manualmente'),
-      content: TextField(
-        controller: controller,
-        decoration: const InputDecoration(
-          hintText: 'Ingresa el código',
-          border: OutlineInputBorder(),
+      content: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: viewInsets.bottom > 0 ? 8 : 0),
+          child: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: 'Ingresa el código',
+              border: OutlineInputBorder(),
+            ),
+            textCapitalization: TextCapitalization.characters,
+            autofocus: true,
+            onSubmitted: (_) => _submit(context, controller.text),
+          ),
         ),
-        textCapitalization: TextCapitalization.characters,
-        autofocus: true,
-        onSubmitted: (_) => _submit(context, controller.text),
       ),
       actions: [
         TextButton(

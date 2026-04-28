@@ -4,6 +4,7 @@ import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 import 'scan_item/scan_item_constants.dart';
 import 'scan_item/scan_item_card.dart';
+import 'common/empty_state.dart';
 
 class SolapinesList extends StatefulWidget {
   final ScanProvider provider;
@@ -120,7 +121,11 @@ class _SolapinesListState extends State<SolapinesList> {
 
   Widget _buildList(BuildContext context, List<ScanItem> items) {
     if (items.isEmpty) {
-      return const Center(child: Text('No hay códigos escaneados'));
+      return const EmptyState(
+        icon: Icons.qr_code_scanner,
+        title: 'No hay códigos',
+        subtitle: 'Escanea para comenzar',
+      );
     }
 
     return ListView.builder(

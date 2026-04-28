@@ -7,4 +7,11 @@ class DateUtils {
     final minute = date.minute.toString().padLeft(2, '0');
     return '$day/$month/$year $hour:$minute';
   }
+
+  static String getDateFileName() {
+    final year = DateTime.now().year;
+    final month = DateTime.now().month.toString().padLeft(2, '0');
+    final day = DateTime.now().day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
+  }
 }

@@ -79,22 +79,41 @@ class _HomePageState extends State<HomePage> {
           key: _scaffoldKey,
           appBar: HomeAppBar(onMenuPressed: () => _scaffoldKey.currentState?.openDrawer()),
           drawer: const AppDrawer(),
-          body: _selectedIndex == 0
-              ? Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ScannerWidget(
-                        onSolapineScanned: _onItemScanned,
-                        onScan: () => settings.triggerScanFeedback(),
+body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.05, 0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOut,
+                  )),
+                  child: child,
+                ),
+              );
+            },
+            child: _selectedIndex == 0
+                ? Column(
+                    key: const ValueKey(0),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ScannerWidget(
+                          onSolapineScanned: _onItemScanned,
+                          onScan: () => settings.triggerScanFeedback(),
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: SolapinesList(provider: provider),
-                    ),
-                  ],
-                )
-              : const SettingsPage(),
+                      Expanded(
+                        child: SolapinesList(provider: provider),
+                      ),
+                    ],
+                  )
+                : const SettingsPage(key: ValueKey(1)),
+          ),
           floatingActionButton: _selectedIndex == 0
               ? FloatingActionButton(
                   onPressed: _showAddManualDialog,

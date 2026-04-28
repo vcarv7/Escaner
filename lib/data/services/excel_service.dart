@@ -83,8 +83,8 @@ class ExcelService {
       }
 
       final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath = '${directory.path}/codigos_$timestamp.xlsx';
+      final fileName = 'solapines_${DateUtils.getDateFileName()}.xlsx';
+      final filePath = '${directory.path}/$fileName';
       final file = File(filePath);
       final encoded = excel.encode();
       if (encoded != null) {
