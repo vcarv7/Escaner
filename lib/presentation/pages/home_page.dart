@@ -69,66 +69,82 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    return Consumer<ScanProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isLargeScreen = screenWidth > 600;
+        
+        return Consumer<ScanProvider>(
+          builder: (context, provider, _) {
+            if (provider.isLoading) {
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
 
-        return Scaffold(
-          key: _scaffoldKey,
-          appBar: HomeAppBar(onMenuPressed: () => _scaffoldKey.currentState?.openDrawer()),
-          drawer: const AppDrawer(),
-body: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.05, 0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOut,
-                  )),
-                  child: child,
-                ),
-              );
-            },
-            child: _selectedIndex == 0
-                ? Column(
-                    key: const ValueKey(0),
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width * 0.03,
-                          vertical: 8,
-                        ),
-                        child: ScannerWidget(
-                          onSolapineScanned: _onItemScanned,
-                          onScan: () => settings.triggerScanFeedback(),
-                        ),
-                      ),
-                      Expanded(
-                        child: SolapinesList(provider: provider),
-                      ),
-                    ],
-                  )
-                : const SettingsPage(key: ValueKey(1)),
-          ),
-          floatingActionButton: _selectedIndex == 0
-              ? FloatingActionButton(
-                  onPressed: _showAddManualDialog,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                  child: const Icon(Icons.add),
-                )
-              : null,
-          bottomNavigationBar: HomeNavBar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) => setState(() => _selectedIndex = index),
-          ),
+            return Scaffold(
+              key: _scaffoldKey,
+              appBar: HomeAppBar(onMenuPressed: () => _scaffoldKey.currentState?.openDrawer()),
+              drawer: const AppDrawer(),
+              body: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.05, 0),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOut,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _selectedIndex == 0
+                    ? Column(
+                        key: const ValueKey(0),
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isLargeScreen ? 32 : screenWidth * 0.03,
+                              vertical: 8,
+                            ),
+                            child: ScannerWidget(
+                              onSolapineScanned: _onItemScanned,
+                              onScan: () => settings.triggerScanFeedback(),
+                            ),
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: isLargeScreen ? 800 : double.infinity,
+                                ),
+                                child: SolapinesList(provider: provider),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : const SettingsPage(key: ValueKey(1)),
+              ),
+              floatingActionButton: _selectedIndex == 0
+                  ? FloatingActionButton(
+                      key: const ValueKey('fab_add'),
+                      onPressed: _showAddManualDialog,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      child: const Icon(Icons.add),
+                    )
+                  : null,
+              bottomNavigationBar: HomeNavBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+              ),
+            );
+          },
         );
       },
     );

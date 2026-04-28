@@ -94,3 +94,46 @@ flutter pub get
 - [Documentación Flutter](https://docs.flutter.dev)
 - [Provider Flutter](https://pub.dev/packages/provider)
 - [Supabase Flutter](https://supabase.com/docs/guides/flutter)
+
+## Skills Utilizadas
+
+Para cargar estas skills en futuras sesiones:
+```bash
+skill load flutter-fix-layout-issues
+skill load flutter-build-responsive-layout
+skill load flutter-add-integration-test
+```
+
+### Skills Aplicadas al Proyecto
+
+| Skill | Uso en el Proyecto |
+|-------|---------------------|
+| flutter-fix-layout-issues | Resolución de overflow en diálogos y listas |
+| flutter-build-responsive-layout | Layout adaptativo con LayoutBuilder y breakpoints |
+| flutter-add-integration-test | Preparación para tests E2E (ValueKey en widgets) |
+
+### Ejemplo de Código Responsivo Aplicado
+
+El HomePage usa LayoutBuilder con breakpoint en 600px:
+- Móviles (<600px): usa todo el ancho disponible
+- Tablets/Escritorio (>600px): limitado a 800px centrado
+
+```dart
+// Ejemplo de LayoutBuilder con breakpoint
+return LayoutBuilder(
+  builder: (context, constraints) {
+    final isLargeScreen = constraints.maxWidth > 600;
+    
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isLargeScreen ? 800 : double.infinity,
+          ),
+          child: MiWidget(),
+        ),
+      ),
+    );
+  },
+);
+```
