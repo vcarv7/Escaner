@@ -78,44 +78,61 @@ class _ScannerWidgetState extends State<ScannerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.2,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _handleDetect,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenHeight = MediaQuery.of(context).size.height;
+        
+        double scannerHeight;
+        if (screenHeight < 600) {
+          scannerHeight = 100;
+        } else if (screenHeight < 700) {
+          scannerHeight = 120;
+        } else if (screenHeight < 800) {
+          scannerHeight = 140;
+        } else {
+          scannerHeight = 160;
+        }
+
+        return Container(
+          height: scannerHeight,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
           ),
-          ScannerOverlay(isProcessing: _isProcessing),
-          if (_isProcessing)
-            Container(
-              color: Colors.black.withValues(alpha: 0.5),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Colors.white,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Escáner en pausa...',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            children: [
+              MobileScanner(
+                controller: _controller,
+                onDetect: _handleDetect,
               ),
-            ),
-        ],
-      ),
+              ScannerOverlay(isProcessing: _isProcessing),
+              if (_isProcessing)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Escáner en pausa...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

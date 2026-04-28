@@ -41,10 +41,17 @@ class _SolapinesListState extends State<SolapinesList> {
         _loadNextPage();
       }
     }
-    if (!_showScrollTopButton && _scrollController.offset > 500) {
-      setState(() => _showScrollTopButton = true);
-    } else if (_showScrollTopButton && _scrollController.offset <= 500) {
-      setState(() => _showScrollTopButton = false);
+    final hasEnoughItems = widget.provider.items.length > 5;
+    if (hasEnoughItems) {
+      if (!_showScrollTopButton && _scrollController.offset > 500) {
+        setState(() => _showScrollTopButton = true);
+      } else if (_showScrollTopButton && _scrollController.offset <= 500) {
+        setState(() => _showScrollTopButton = false);
+      }
+    } else {
+      if (_showScrollTopButton) {
+        setState(() => _showScrollTopButton = false);
+      }
     }
   }
 
@@ -81,7 +88,7 @@ class _SolapinesListState extends State<SolapinesList> {
                 Expanded(child: _buildList(context, items)),
               ],
             ),
-            if (_showScrollTopButton)
+            if (_showScrollTopButton && items.isNotEmpty && items.length > 5)
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -99,8 +106,11 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount, bool hasItems) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final verticalPadding = screenHeight < 600 ? 4.0 : 8.0;
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -123,15 +133,17 @@ class _SolapinesListState extends State<SolapinesList> {
     if (items.isEmpty) {
       return const EmptyState(
         icon: Icons.qr_code_scanner,
-        title: 'No hay códigos',
-        subtitle: 'Escanea para comenzar',
+        title: 'Escanea para comenzar',
+        subtitle: 'Apunta la cámara al solapín',
       );
     }
 
     return ListView.builder(
       controller: _scrollController,
       itemCount: items.length + (_isLoadingMore ? 1 : 0),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width > 400 ? 16 : 8,
+      ),
       itemBuilder: (context, index) {
         if (index >= items.length) {
           return const Padding(

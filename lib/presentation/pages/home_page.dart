@@ -101,7 +101,10 @@ body: AnimatedSwitcher(
                     key: const ValueKey(0),
                     children: [
                       Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width * 0.03,
+                          vertical: 8,
+                        ),
                         child: ScannerWidget(
                           onSolapineScanned: _onItemScanned,
                           onScan: () => settings.triggerScanFeedback(),

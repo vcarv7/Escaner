@@ -14,8 +14,9 @@ class ScanItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDuplicate = item.isDuplicate;
     final isSolapine = item.type == ScanType.solapine;
-
-    return Card(
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    final card = Card(
       margin: const EdgeInsets.only(bottom: ScanItemConstants.cardMargin),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -35,11 +36,15 @@ class ScanItemCard extends StatelessWidget {
                               ? ScanItemColors.duplicate
                               : null,
                         ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     ScanItemConstants.formatDate(item.scannedAt),
                     style: Theme.of(context).textTheme.bodySmall,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ],
               ),
@@ -49,6 +54,15 @@ class ScanItemCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (screenWidth > 600) {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 600),
+        child: card,
+      );
+    }
+
+    return card;
   }
 
   Widget _buildBadge(bool isSolapine, bool isDuplicate) {
