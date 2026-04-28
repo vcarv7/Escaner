@@ -14,41 +14,102 @@ class ScanItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDuplicate = item.isDuplicate;
     final isSolapine = item.type == ScanType.solapine;
-    final typeLabel = isSolapine ? ScanItemConstants.solapineLabel : ScanItemConstants.tarjetaLabel;
 
     return Card(
-      color: isDuplicate ? ScanItemColors.duplicateBackground : null,
       margin: const EdgeInsets.only(bottom: ScanItemConstants.cardMargin),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getAvatarColor(isDuplicate, isSolapine),
-          foregroundColor: _getAvatarForegroundColor(isDuplicate, isSolapine, context),
-          child: Text(typeLabel),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            _buildBadge(isSolapine, isDuplicate),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.code,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: isDuplicate
+                              ? ScanItemColors.duplicate
+                              : null,
+                        ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    ScanItemConstants.formatDate(item.scannedAt),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            _buildTrailing(isDuplicate, isSolapine),
+          ],
         ),
-        title: Text(item.code),
-        subtitle: Text(ScanItemConstants.formatDate(item.scannedAt)),
-        trailing: _buildTrailing(isDuplicate, isSolapine),
       ),
     );
   }
 
-  Color _getAvatarColor(bool isDuplicate, bool isSolapine) {
-    if (isDuplicate) return ScanItemColors.duplicate;
-    return ScanItemColors.getTypeColor(isSolapine);
-  }
+  Widget _buildBadge(bool isSolapine, bool isDuplicate) {
+    final backgroundColor = isDuplicate
+        ? ScanItemColors.duplicateBackground
+        : ScanItemColors.getBackgroundColor(isSolapine);
+    final iconColor = isDuplicate
+        ? ScanItemColors.duplicate
+        : ScanItemColors.getTypeColor(isSolapine);
+    final icon = isSolapine
+        ? ScanItemConstants.getSolapineIcon()
+        : ScanItemConstants.getTarjetaIcon();
 
-  Color _getAvatarForegroundColor(bool isDuplicate, bool isSolapine, BuildContext context) {
-    if (isDuplicate || !isSolapine) return Colors.white;
-    return Theme.of(context).colorScheme.onPrimary;
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        isDuplicate ? Icons.warning_rounded : icon,
+        color: iconColor,
+        size: 22,
+      ),
+    );
   }
 
   Widget _buildTrailing(bool isDuplicate, bool isSolapine) {
     if (isDuplicate) {
-      return const Icon(Icons.warning, color: ScanItemColors.duplicate);
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: ScanItemColors.duplicateBackground,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Text(
+          'Duplicado',
+          style: TextStyle(
+            color: ScanItemColors.duplicate,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
     }
-    return Icon(
-      isSolapine ? Icons.qr_code : Icons.credit_card,
-      color: ScanItemColors.tarjeta,
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: ScanItemColors.getBackgroundColor(isSolapine),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        isSolapine ? 'Solapín' : 'Tarjeta',
+        style: TextStyle(
+          color: ScanItemColors.getTypeColor(isSolapine),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }

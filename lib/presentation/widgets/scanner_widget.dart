@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
+import 'scanner/scanner_overlay.dart';
 import 'overlay/overlay_message.dart';
 
 class ScannerWidget extends StatefulWidget {
@@ -80,40 +81,40 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.2,
       decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).colorScheme.primary, width: 2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Stack(
-          children: [
-            MobileScanner(
-              controller: _controller,
-              onDetect: _handleDetect,
-            ),
-            if (_isProcessing)
-              Container(
-                color: Colors.black54,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          MobileScanner(
+            controller: _controller,
+            onDetect: _handleDetect,
+          ),
+          ScannerOverlay(isProcessing: _isProcessing),
+          if (_isProcessing)
+            Container(
+              color: Colors.black.withValues(alpha: 0.5),
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Escáner en pausa...',
+                      style: TextStyle(
                         color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Escáner en pausa...',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white,
-                            ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

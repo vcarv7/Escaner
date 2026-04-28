@@ -135,18 +135,7 @@ class _SolapinesListState extends State<SolapinesList> {
           );
         }
         final item = items[index];
-        return Dismissible(
-          key: ValueKey(item.code),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 16),
-            color: Colors.orange,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (_) => widget.provider.deleteItem(item),
-          child: ScanItemCard(item: item),
-        );
+        return ScanItemCard(item: item);
       },
     );
   }

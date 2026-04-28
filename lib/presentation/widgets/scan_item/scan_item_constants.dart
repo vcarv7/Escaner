@@ -4,13 +4,20 @@ import '../../../core/utils/date_utils.dart' as app_date;
 
 class ScanItemColors {
   static const Color solapine = AppTheme.primary;
-  static const Color tarjeta = Colors.blue;
+  static const Color tarjeta = AppTheme.secondary;
 
   static const Color duplicate = Color(0xFFB71C1C);
   static const Color duplicateBackground = Color(0x33B71C1C);
 
+  static const Color solapineBackground = Color(0x1AFF0000);
+  static const Color tarjetaBackground = Color(0x1A2196F3);
+
   static Color getTypeColor(bool isSolapine) {
     return isSolapine ? solapine : tarjeta;
+  }
+
+  static Color getBackgroundColor(bool isSolapine) {
+    return isSolapine ? solapineBackground : tarjetaBackground;
   }
 }
 
@@ -23,8 +30,11 @@ class ScanItemConstants {
   static const String solapinesPlural = 'Solapines';
   static const String tarjetasPlural = 'Tarjetas';
 
-  static const double cardMargin = 8.0;
+  static const double cardMargin = 10.0;
   static const double avatarRadius = 20.0;
+
+  static IconData getSolapineIcon() => Icons.tag;
+  static IconData getTarjetaIcon() => Icons.credit_card;
 
   static String formatDate(DateTime date) => app_date.DateUtils.formatDate(date);
 
