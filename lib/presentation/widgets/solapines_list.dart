@@ -134,7 +134,7 @@ class _SolapinesListState extends State<SolapinesList> {
       return const EmptyState(
         icon: Icons.qr_code_scanner,
         title: 'Escanea para comenzar',
-        subtitle: 'Apunta la cámara al solapín',
+        subtitle: 'Apunta al solapín',
       );
     }
 
