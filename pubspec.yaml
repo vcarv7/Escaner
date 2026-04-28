@@ -37,3 +37,4 @@ flutter_launcher_icons:
     image_path: "assets/images/logo 2.png"
     adaptive_icon_background: "#FFFFFF"
     adaptive_icon_foreground: "assets/images/logo 2.png"
+    android_shape: "circle"
