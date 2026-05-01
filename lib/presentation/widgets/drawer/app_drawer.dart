@@ -37,24 +37,6 @@ class _AppDrawerState extends State<AppDrawer>
     super.dispose();
   }
 
-  Future<void> _importFromExcel() async {
-    if (!mounted) return;
-    final scanProvider = context.read<ScanProvider>();
-    
-    final codes = await ExcelService.importFromExcel();
-
-    if (codes.isEmpty) {
-      if (!mounted) return;
-      OverlayMessage.warning(context, 'No se encontraron códigos en el archivo');
-      return;
-    }
-
-    scanProvider.importCodes(codes);
-
-    if (!mounted) return;
-    OverlayMessage.success(context, '${codes.length} códigos importados');
-  }
-
   Future<void> _exportToExcel() async {
     if (!mounted) return;
     final scanProvider = context.read<ScanProvider>();
@@ -125,12 +107,6 @@ class _AppDrawerState extends State<AppDrawer>
   Widget _buildDataSection(BuildContext context) {
     return Column(
       children: [
-        DrawerMenuItem(
-          icon: Icons.file_upload_outlined,
-          title: 'Importar Excel',
-          subtitle: 'Cargar códigos desde archivo',
-          onTap: _importFromExcel,
-        ),
         DrawerMenuItem(
           icon: Icons.file_download_outlined,
           title: 'Exportar Excel',

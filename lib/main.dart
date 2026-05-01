@@ -5,6 +5,8 @@ import 'data/services/storage_service.dart';
 import 'presentation/providers/scan_provider.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/auth_provider.dart';
+import 'presentation/providers/evento_provider.dart';
+import 'presentation/providers/csv_provider.dart';
 import 'presentation/pages/home_page.dart';
 
 void main() async {
@@ -23,6 +25,8 @@ class MainApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScanProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..init()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+        ChangeNotifierProvider(create: (_) => EventoProvider()),
+        ChangeNotifierProvider(create: (_) => CsvProvider()..init()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {

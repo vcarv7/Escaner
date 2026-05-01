@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/evento.dart';
 
 class StorageService {
   static const String _itemsKey = 'scanned_items';
@@ -10,6 +11,22 @@ class StorageService {
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+  }
+
+  static Evento? _parseEvento(String? value) {
+    if (value == null) return null;
+    return Evento.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => Evento.almuerzo,
+    );
+  }
+
+  static ScanStatus _parseStatus(String? value) {
+    if (value == null) return ScanStatus.reserved;
+    return ScanStatus.values.firstWhere(
+      (s) => s.name == value,
+      orElse: () => ScanStatus.reserved,
+    );
   }
 
   static Future<List<ScanItem>> loadItems() async {
@@ -23,6 +40,10 @@ class StorageService {
         type: item['type'] == 'solapine' ? ScanType.solapine : ScanType.tarjeta,
         isDuplicate: item['isDuplicate'] as bool? ?? false,
         scannedAt: DateTime.parse(item['scannedAt'] as String),
+        evento: item['evento'] != null ? _parseEvento(item['evento'] as String) : null,
+        personaSolapine: item['personaSolapine'] as String?,
+        personaNombre: item['personaNombre'] as String?,
+        status: _parseStatus(item['status'] as String?),
       )).toList();
     } catch (e) {
       return [];
@@ -36,6 +57,10 @@ class StorageService {
         'type': item.type == ScanType.solapine ? 'solapine' : 'tarjeta',
         'isDuplicate': item.isDuplicate,
         'scannedAt': item.scannedAt.toIso8601String(),
+        'evento': item.evento?.name,
+        'personaSolapine': item.personaSolapine,
+        'personaNombre': item.personaNombre,
+        'status': item.status.name,
       }).toList();
 
       return await _prefs.setString(_itemsKey, json.encode(jsonList));
@@ -59,6 +84,10 @@ class StorageService {
         type: item['type'] == 'solapine' ? ScanType.solapine : ScanType.tarjeta,
         isDuplicate: item['isDuplicate'] as bool? ?? false,
         scannedAt: DateTime.parse(item['scannedAt'] as String),
+        evento: item['evento'] != null ? _parseEvento(item['evento'] as String) : null,
+        personaSolapine: item['personaSolapine'] as String?,
+        personaNombre: item['personaNombre'] as String?,
+        status: _parseStatus(item['status'] as String?),
       )).toList();
     } catch (e) {
       return [];
@@ -72,6 +101,10 @@ class StorageService {
         'type': item.type == ScanType.solapine ? 'solapine' : 'tarjeta',
         'isDuplicate': item.isDuplicate,
         'scannedAt': item.scannedAt.toIso8601String(),
+        'evento': item.evento?.name,
+        'personaSolapine': item.personaSolapine,
+        'personaNombre': item.personaNombre,
+        'status': item.status.name,
       }).toList();
 
       return await _prefs.setString(_trashKey, json.encode(jsonList));

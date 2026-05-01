@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../../data/services/storage_service.dart';
+import '../../data/services/auto_delete_service.dart';
 import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/evento.dart';
+import '../../domain/entities/persona.dart';
 import '../../core/constants/app_constants.dart';
-import '../../core/utils/validation_utils.dart';
 
 class ScanProvider extends ChangeNotifier {
   late List<ScanItem> _items;
@@ -21,6 +23,7 @@ class ScanProvider extends ChangeNotifier {
     _items = await StorageService.loadItems();
     _trashItems = await StorageService.loadTrash();
     _isLoading = false;
+    AutoDeleteService.iniciar();
     notifyListeners();
   }
 
@@ -31,26 +34,72 @@ class ScanProvider extends ChangeNotifier {
     return _items.sublist(start, end.clamp(0, _items.length));
   }
 
-  bool addItem(String code) {
-    if (!ValidationUtils.isValidCode(code)) return false;
-    final type = ValidationUtils.detectType(code);
+  bool addItem(String code, Evento evento, List<Persona> personas) {
+    if (!_isValidCode(code)) return false;
+
     final existingIndex = _items.indexWhere((s) => s.code == code);
+    final persona = _findPersonaByCodigo(code, personas);
+    final type = _detectType(code);
+
     if (existingIndex != -1) {
-      _items[existingIndex] = _items[existingIndex].copyWith(isDuplicate: true);
+      final existing = _items[existingIndex];
+      final newStatus = persona != null
+          ? ScanStatus.duplicate
+          : ScanStatus.notReservedDuplicate;
+      _items[existingIndex] = existing.copyWith(
+        isDuplicate: true,
+        status: newStatus,
+      );
       _saveItems();
       notifyListeners();
       return false;
     }
+
+    ScanStatus status;
+    if (persona != null) {
+      status = ScanStatus.reserved;
+    } else {
+      status = ScanStatus.notReserved;
+    }
+
     _items.add(ScanItem(
       code: code,
       type: type,
       isDuplicate: false,
       scannedAt: DateTime.now(),
+      evento: evento,
+      personaSolapine: persona?.solapine,
+      personaNombre: persona?.nombreCompleto,
+      status: status,
     ));
     _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
     _saveItems();
     notifyListeners();
     return true;
+  }
+
+  Persona? _findPersonaByCodigo(String code, List<Persona> personas) {
+    for (final persona in personas) {
+      if (persona.codigo == code) {
+        return persona;
+      }
+    }
+    return null;
+  }
+
+  bool _isValidCode(String code) {
+    if (code.isEmpty) return false;
+    final length = code.length;
+    return length >= AppConstants.minCodeLength && length <= AppConstants.maxCodeLength;
+  }
+
+  ScanType _detectType(String code) {
+    if (code.length >= AppConstants.minCodeLength &&
+        code.length <= AppConstants.maxCodeLength &&
+        RegExp(r'^[A-Za-z]+$').hasMatch(code)) {
+      return ScanType.tarjeta;
+    }
+    return ScanType.solapine;
   }
 
   void deleteItem(ScanItem item) {
@@ -79,37 +128,6 @@ class ScanProvider extends ChangeNotifier {
     for (final item in List.from(_trashItems)) {
       restoreItem(item);
     }
-  }
-
-  void clearAll() {
-    _trashItems.addAll(_items);
-    _items.clear();
-    _currentPage = 1;
-    _hasMoreData = true;
-    _saveItems();
-    _saveTrash();
-    notifyListeners();
-  }
-
-  void importCodes(List<String> codes) {
-    for (final code in codes) {
-      if (!ValidationUtils.isValidCode(code)) continue;
-      final existingIndex = _items.indexWhere((s) => s.code == code);
-      final type = ValidationUtils.detectType(code);
-      if (existingIndex == -1) {
-        _items.add(ScanItem(
-          code: code,
-          type: type,
-          isDuplicate: false,
-          scannedAt: DateTime.now(),
-        ));
-      } else {
-        _items[existingIndex] = _items[existingIndex].copyWith(isDuplicate: true);
-      }
-    }
-    _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
-    _saveItems();
-    notifyListeners();
   }
 
   void resetPagination() {

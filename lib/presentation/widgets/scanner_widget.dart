@@ -9,11 +9,13 @@ import 'overlay/overlay_message.dart';
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
   final VoidCallback? onScan;
+  final bool enabled;
 
   const ScannerWidget({
     super.key,
     required this.onSolapineScanned,
     this.onScan,
+    this.enabled = true,
   });
 
   @override

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
+import '../providers/evento_provider.dart';
+import '../providers/csv_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/scanner_widget.dart';
 import '../widgets/solapines_list.dart';
@@ -29,38 +31,65 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScanProvider>().init();
+      context.read<CsvProvider>().init();
     });
   }
 
   void _onItemScanned(String code) {
+    final eventoProvider = context.read<EventoProvider>();
+    if (!eventoProvider.tieneEventoSeleccionado) {
+      OverlayMessage.error(context, 'Selecciona un evento primero');
+      return;
+    }
+    final csvProvider = context.read<CsvProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = provider.addItem(code);
-    final type = ValidationUtils.detectType(code);
-    final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
+    final isNew = provider.addItem(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
-      OverlayMessage.success(context, '$typeLabel $code escaneado');
+      final item = provider.items.last;
+      if (item.status == ScanStatus.reserved) {
+        OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
+      } else {
+        OverlayMessage.warning(context, 'Código no reservado');
+      }
     } else {
-      OverlayMessage.error(context, 'Código duplicado');
+      if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {
+        OverlayMessage.error(context, 'No reservado y duplicado');
+      } else {
+        OverlayMessage.error(context, 'Duplicado');
+      }
     }
   }
 
   void _addItemManually(String code) {
+    final eventoProvider = context.read<EventoProvider>();
+    if (!eventoProvider.tieneEventoSeleccionado) {
+      OverlayMessage.error(context, 'Selecciona un evento primero');
+      return;
+    }
+    final csvProvider = context.read<CsvProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = provider.addItem(code);
-    final type = ValidationUtils.detectType(code);
-    final typeLabel = type == ScanType.solapine ? 'Solapín' : 'Tarjeta';
+    final isNew = provider.addItem(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
-      OverlayMessage.success(context, '$typeLabel $code agregado');
+      final item = provider.items.last;
+      if (item.status == ScanStatus.reserved) {
+        OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
+      } else {
+        OverlayMessage.warning(context, 'Código no reservado');
+      }
     } else {
-      OverlayMessage.error(context, 'Código duplicado');
+      if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {
+        OverlayMessage.error(context, 'No reservado y duplicado');
+      } else {
+        OverlayMessage.error(context, 'Duplicado');
+      }
     }
   }
 
