@@ -7,6 +7,15 @@ import '../../domain/entities/persona.dart';
 class CsvService {
   static const String _cacheFileName = 'personas_cache.json';
 
+  static Future<bool> checkUrl(String url) async {
+    try {
+      final response = await http.head(Uri.parse(url));
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   static Future<List<Persona>> downloadAndParse(String url) async {
     try {
       final response = await http.get(Uri.parse(url));
@@ -21,11 +30,12 @@ class CsvService {
 
   static List<Persona> _parseCsv(String csvContent) {
     final List<Persona> personas = [];
-    final lines = csvContent.split('\n');
+    final lines = csvContent.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
 
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
-      if (line.isEmpty || i == 0) continue;
+      if (line.isEmpty) continue;
+      if (i == 0 && line.contains('codigo')) continue;
 
       final parts = line.split(',');
       if (parts.length < 4) continue;

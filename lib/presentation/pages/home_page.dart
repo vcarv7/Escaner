@@ -6,11 +6,11 @@ import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
 import '../providers/csv_provider.dart';
 import '../providers/settings_provider.dart';
-import '../widgets/scanner_widget.dart';
+import '../widgets/scanner/scanner_widget.dart';
 import '../widgets/solapines_list.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/home_nav_bar.dart';
-import '../widgets/add_manual_dialog.dart';
+import '../widgets/dialogs/add_manual_dialog.dart';
 import '../widgets/drawer/app_drawer.dart';
 import '../widgets/overlay/overlay_message.dart';
 import 'settings_page.dart';
@@ -95,6 +95,25 @@ class _HomePageState extends State<HomePage> {
 
   void _showAddManualDialog() => AddManualDialog.show(context, _addItemManually);
 
+  Future<void> _checkConnection(BuildContext context) async {
+    final settings = context.read<SettingsProvider>();
+    final csvProvider = context.read<CsvProvider>();
+
+    if (settings.csvUrl.isEmpty) {
+      OverlayMessage.error(context, 'Ingresa una URL primero');
+      return;
+    }
+
+    final isConnected = await csvProvider.checkConnection(settings.csvUrl);
+    if (!context.mounted) return;
+
+    if (isConnected) {
+      OverlayMessage.success(context, 'Conexión exitosa');
+    } else {
+      OverlayMessage.error(context, 'Sin conexión');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -112,7 +131,12 @@ class _HomePageState extends State<HomePage> {
 
             return Scaffold(
               key: _scaffoldKey,
-              appBar: HomeAppBar(onMenuPressed: () => _scaffoldKey.currentState?.openDrawer()),
+              appBar: HomeAppBar(
+                onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                showActions: _selectedIndex == 0,
+                showConnection: _selectedIndex == 1,
+                onCheckConnection: _selectedIndex == 1 ? () => _checkConnection(context) : null,
+              ),
               drawer: const AppDrawer(),
               body: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),

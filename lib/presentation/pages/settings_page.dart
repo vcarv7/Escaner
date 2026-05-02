@@ -58,8 +58,6 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildCsvUrlCard(BuildContext context, SettingsProvider settings, CsvProvider csvProvider, ColorScheme colorScheme) {
-    final controller = TextEditingController(text: settings.csvUrl);
-
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -76,8 +74,8 @@ class SettingsPage extends StatelessWidget {
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            TextField(
-              controller: controller,
+            TextFormField(
+              initialValue: settings.csvUrl,
               decoration: InputDecoration(
                 hintText: 'https://ejemplo.com/personas.csv',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -86,36 +84,7 @@ class SettingsPage extends StatelessWidget {
               onChanged: (value) => settings.setCsvUrl(value),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: csvProvider.isLoading
-                        ? null
-                        : () async {
-                            if (settings.csvUrl.isEmpty) {
-                              OverlayMessage.error(context, 'Ingresa una URL primero');
-                              return;
-                            }
-                            final success = await csvProvider.actualizarLista(settings.csvUrl);
-                            if (success) {
-                              OverlayMessage.success(context, 'Lista actualizada (${csvProvider.personas.length} personas)');
-                            } else {
-                              OverlayMessage.error(context, csvProvider.error ?? 'Error al descargar');
-                            }
-                          },
-                    icon: csvProvider.isLoading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.download),
-                    label: Text(csvProvider.isLoading ? 'Descargando...' : 'Actualizar Personas'),
-                  ),
-                ),
-              ],
-            ),
+            _UpdateButton(settings: settings, csvProvider: csvProvider),
             const SizedBox(height: 8),
             Text(
               '${csvProvider.personas.length} personas cargadas',
@@ -171,24 +140,9 @@ class SettingsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildRadioOption(
-              'Ninguno',
-              settings.scanFeedback == ScanFeedback.none,
-              () => settings.setScanFeedback(ScanFeedback.none),
-              colorScheme,
-            ),
-            _buildRadioOption(
-              'Sonido',
-              settings.scanFeedback == ScanFeedback.sound,
-              () => settings.setScanFeedback(ScanFeedback.sound),
-              colorScheme,
-            ),
-            _buildRadioOption(
-              'Vibración',
-              settings.scanFeedback == ScanFeedback.vibration,
-              () => settings.setScanFeedback(ScanFeedback.vibration),
-              colorScheme,
-            ),
+            _buildRadioOption('Ninguno', settings.scanFeedback == ScanFeedback.none, () => settings.setScanFeedback(ScanFeedback.none), colorScheme),
+            _buildRadioOption('Sonido', settings.scanFeedback == ScanFeedback.sound, () => settings.setScanFeedback(ScanFeedback.sound), colorScheme),
+            _buildRadioOption('Vibración', settings.scanFeedback == ScanFeedback.vibration, () => settings.setScanFeedback(ScanFeedback.vibration), colorScheme),
           ],
         ),
       ),
@@ -234,10 +188,7 @@ class SettingsPage extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
             title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-            trailing: Text(
-              _getVersion(),
-              style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
-            ),
+            trailing: Text(_getVersion(), style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
           ),
           Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
           ListTile(
@@ -248,6 +199,43 @@ class SettingsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _UpdateButton extends StatelessWidget {
+  final SettingsProvider settings;
+  final CsvProvider csvProvider;
+
+  const _UpdateButton({required this.settings, required this.csvProvider});
+
+  @override
+  Widget build(BuildContext context) {
+    return Builder(
+      builder: (ctx) {
+        return SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: csvProvider.isLoading ? null : () async {
+              if (settings.csvUrl.isEmpty) {
+                OverlayMessage.error(ctx, 'Ingresa una URL primero');
+                return;
+              }
+              final success = await csvProvider.actualizarLista(settings.csvUrl);
+              if (!ctx.mounted) return;
+              if (success) {
+                OverlayMessage.success(ctx, 'Lista actualizada (${csvProvider.personas.length} personas)');
+              } else {
+                OverlayMessage.error(ctx, csvProvider.error ?? 'Error al descargar');
+              }
+            },
+            icon: csvProvider.isLoading
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download),
+            label: Text(csvProvider.isLoading ? 'Descargando...' : 'Actualizar Personas'),
+          ),
+        );
+      },
     );
   }
 }

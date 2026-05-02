@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../../core/constants/app_constants.dart';
-import '../../core/utils/validation_utils.dart';
-import 'scanner/scanner_overlay.dart';
-import 'overlay/overlay_message.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/validation_utils.dart';
+import 'scanner_overlay.dart';
+import '../overlay/overlay_message.dart';
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;

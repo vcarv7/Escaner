@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../domain/entities/evento.dart';
-import '../providers/evento_provider.dart';
+import '../../../domain/entities/evento.dart';
+import '../../providers/evento_provider.dart';
 
 class EventoSelectorDialog extends StatefulWidget {
   const EventoSelectorDialog({super.key});
@@ -24,6 +24,8 @@ class _EventoSelectorDialogState extends State<EventoSelectorDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final eventosFiltrados = Evento.values.where((e) => e.esDoble == _esDoble).toList();
+
     return AlertDialog(
       title: const Text('Seleccionar Evento'),
       content: Column(
@@ -39,20 +41,32 @@ class _EventoSelectorDialogState extends State<EventoSelectorDialog> {
             subtitle: const Text('Dos escaneos por persona'),
             value: _esDoble,
             onChanged: (value) {
-              setState(() => _esDoble = value);
+              setState(() {
+                _esDoble = value;
+                _eventoSeleccionado = null;
+              });
             },
           ),
           const SizedBox(height: 8),
-          ...Evento.values.where((e) => e.esDoble == _esDoble).map((evento) {
-            return RadioListTile<Evento>(
-              title: Text(evento.displayName),
-              value: evento,
-              groupValue: _eventoSeleccionado,
-              onChanged: (value) {
-                setState(() => _eventoSeleccionado = value);
-              },
-            );
-          }),
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: eventosFiltrados.map((evento) {
+                  final isSelected = _eventoSeleccionado == evento;
+                  return ListTile(
+                    title: Text(evento.displayName),
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                    ),
+                    onTap: () => setState(() => _eventoSeleccionado = evento),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
         ],
       ),
       actions: [

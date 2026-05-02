@@ -6,15 +6,34 @@ class CsvProvider extends ChangeNotifier {
   List<Persona> _personas = [];
   bool _isLoading = false;
   String? _error;
+  bool _isConnected = false;
+  DateTime? _lastConnectionCheck;
 
   List<Persona> get personas => _personas;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get tienePersonas => _personas.isNotEmpty;
+  bool get isConnected => _isConnected;
+  DateTime? get lastConnectionCheck => _lastConnectionCheck;
 
   Future<void> init() async {
     _personas = await CsvService.loadFromCache();
     notifyListeners();
+  }
+
+  Future<bool> checkConnection(String url) async {
+    try {
+      final isConnected = await CsvService.checkUrl(url);
+      _isConnected = isConnected;
+      _lastConnectionCheck = DateTime.now();
+      notifyListeners();
+      return isConnected;
+    } catch (e) {
+      _isConnected = false;
+      _lastConnectionCheck = DateTime.now();
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> actualizarLista(String url) async {
