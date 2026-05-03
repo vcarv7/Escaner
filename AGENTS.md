@@ -8,8 +8,6 @@ Aplicación móvil Flutter para escaneo de códigos de barras y QR.
 |------------|-----------|
 | Flutter 3.x | Framework UI |
 | Provider | Gestión de estado |
-| go_router | Navegación |
-| Supabase | Backend (Auth + DB) |
 | mobile_scanner | Escaneo de códigos |
 
 ## Estructura del Proyecto
@@ -23,7 +21,7 @@ lib/
 │   ├── theme/             # Tema y estilos
 │   └── utils/             # Utilidades generales
 ├── data/                  # Capa de datos
-│   ├── datasources/       # Fuentes de datos (Supabase)
+│   ├── datasources/       # Fuentes de datos (Local + CSV)
 │   ├── models/            # Modelos de datos
 │   └── repositories/      # Implementación de repositorios
 ├── domain/                # Capa de dominio
@@ -84,16 +82,15 @@ flutter pub get
 
 ## Seguridad
 
-- No exponer credenciales de Supabase en código
+- No hardcodear credenciales o URLs en código
 - Usar variables de entorno para secrets
-- Validar datos del servidor
-- Implementar autenticación con Supabase Auth
+- Validar datos del servidor antes de usarlos
+- Usar almacenamiento cifrado para datos sensibles
 
 ## Recursos
 
 - [Documentación Flutter](https://docs.flutter.dev)
 - [Provider Flutter](https://pub.dev/packages/provider)
-- [Supabase Flutter](https://supabase.com/docs/guides/flutter)
 
 ## Skills Utilizadas
 

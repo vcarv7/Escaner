@@ -1,7 +1,7 @@
 name: escaner_1
 description: "Escáner de solapines"
 publish_to: 'none'
-version: 0.8.0
+version: 0.8.1
 
 environment:
   sdk: ^3.10.7
@@ -15,6 +15,7 @@ dependencies:
   path_provider: ^2.1.5
   share_plus: ^10.0.0
   shared_preferences: ^2.3.5
+  flutter_secure_storage: ^9.2.4
   provider: ^6.1.2
   audioplayers: ^6.0.0
   vibration: ^2.0.0

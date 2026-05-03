@@ -6,13 +6,11 @@ import 'drawer_animated_avatar.dart';
 class DrawerProfileSection extends StatelessWidget {
   final String userName;
   final String userEmail;
-  final bool isAuthenticated;
 
   const DrawerProfileSection({
     super.key,
     this.userName = DrawerConstants.defaultUserName,
     this.userEmail = DrawerConstants.defaultUserEmail,
-    this.isAuthenticated = false,
   });
 
   @override

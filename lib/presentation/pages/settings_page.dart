@@ -183,21 +183,10 @@ class SettingsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
-      child: Column(
-        children: [
-          ListTile(
-            leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
-            title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-            trailing: Text(_getVersion(), style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-          ),
-          Divider(height: 1, color: colorScheme.outline.withValues(alpha: 0.2)),
-          ListTile(
-            leading: Icon(Icons.help_outline, size: 24, color: colorScheme.onSurface),
-            title: Text('¿Cómo usar?', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-            trailing: Icon(Icons.chevron_right, color: colorScheme.onSurface.withValues(alpha: 0.7)),
-            onTap: () {},
-          ),
-        ],
+      child: ListTile(
+        leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
+        title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+        trailing: Text(_getVersion(), style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
       ),
     );
   }

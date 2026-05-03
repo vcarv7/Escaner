@@ -62,13 +62,4 @@ class CsvProvider extends ChangeNotifier {
       return false;
     }
   }
-
-  Persona? findByCodigo(String codigo) {
-    for (final persona in _personas) {
-      if (persona.codigo == codigo) {
-        return persona;
-      }
-    }
-    return null;
-  }
 }

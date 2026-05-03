@@ -69,7 +69,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         if (showActions) ...[
           IconButton(
-            icon: const Icon(Icons.event),
+            icon: const Icon(Icons.restaurant),
             tooltip: 'Cambiar evento',
             onPressed: () => EventoSelectorDialog.show(context),
           ),

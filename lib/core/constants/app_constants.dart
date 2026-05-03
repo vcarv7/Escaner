@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appVersion = '0.8.0';
+  static const String appVersion = '0.8.1';
   static const int minCodeLength = 5;
   static const int maxCodeLength = 15;
   static const int pageSize = 50;

@@ -83,14 +83,4 @@ class CsvService {
       return false;
     }
   }
-
-  static Future<Persona?> findByCodigo(String codigo) async {
-    final personas = await loadFromCache();
-    for (final persona in personas) {
-      if (persona.codigo == codigo) {
-        return persona;
-      }
-    }
-    return null;
-  }
 }

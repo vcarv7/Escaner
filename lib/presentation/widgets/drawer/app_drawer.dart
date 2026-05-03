@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:escaner_1/data/services/excel_service.dart';
 import 'package:escaner_1/presentation/providers/scan_provider.dart';
-import 'package:escaner_1/presentation/providers/auth_provider.dart';
 import 'package:escaner_1/presentation/widgets/overlay/overlay_message.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_constants.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_menu_item.dart';
@@ -64,21 +63,14 @@ class _AppDrawerState extends State<AppDrawer>
       child: SafeArea(
         child: Column(
           children: [
-            Consumer<AuthProvider>(
-              builder: (context, authProvider, _) {
-                return const DrawerProfileSection(
-                  userName: DrawerConstants.defaultUserName,
-                  userEmail: 'Invitado',
-                  isAuthenticated: false,
-                );
-              },
+            const DrawerProfileSection(
+              userName: DrawerConstants.defaultUserName,
+              userEmail: 'Invitado',
             ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: DrawerConstants.spacingSmall),
                 children: [
-                  const Divider(),
-                  _buildAuthSection(context),
                   const Divider(),
                   _buildDataSection(context),
                   const Divider(),
@@ -89,18 +81,6 @@ class _AppDrawerState extends State<AppDrawer>
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildAuthSection(BuildContext context) {
-    return DrawerMenuItem(
-      icon: Icons.login,
-      title: 'Iniciar Sesión',
-      subtitle: 'Próximamente disponible',
-      onTap: () {
-        OverlayMessage.info(context, 'Función en desarrollo');
-      },
-      isPrimary: true,
     );
   }
 
