@@ -18,14 +18,16 @@ class AddManualDialog extends StatelessWidget {
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     return AlertDialog(
-      title: const Text('Agregar código manualmente'),
+      title: const Text('Agregar código manualmente', style: TextStyle(fontSize: 20)),
       content: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom > 0 ? 8 : 0),
           child: TextField(
             controller: controller,
+            style: const TextStyle(fontSize: 18),
             decoration: const InputDecoration(
               hintText: 'Ingresa el código',
+              hintStyle: TextStyle(fontSize: 16),
               border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.characters,
@@ -37,14 +39,14 @@ class AddManualDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
         ),
         TextButton(
           onPressed: () => _submit(context, controller.text),
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.primary,
           ),
-          child: const Text('Agregar'),
+          child: const Text('Agregar', style: TextStyle(fontSize: 16)),
         ),
       ],
     );

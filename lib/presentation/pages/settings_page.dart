@@ -49,9 +49,9 @@ class SettingsPage extends StatelessWidget {
       child: Text(
         title,
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: colorScheme.onSurface.withValues(alpha: 0.6),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface.withValues(alpha: 0.7),
         ),
       ),
     );
@@ -71,24 +71,26 @@ class SettingsPage extends StatelessWidget {
           children: [
             Text(
               'URL del servidor CSV',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             TextFormField(
               initialValue: settings.csvUrl,
+              style: const TextStyle(fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'https://ejemplo.com/personas.csv',
+                hintStyle: TextStyle(fontSize: 14),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               ),
               onChanged: (value) => settings.setCsvUrl(value),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             _UpdateButton(settings: settings, csvProvider: csvProvider),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               '${csvProvider.personas.length} personas cargadas',
-              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
             ),
           ],
         ),
@@ -104,17 +106,17 @@ class SettingsPage extends StatelessWidget {
         side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
-                Icon(Icons.dark_mode_outlined, size: 24, color: colorScheme.onSurface),
-                const SizedBox(width: 16),
+                Icon(Icons.dark_mode_outlined, size: 28, color: colorScheme.onSurface),
+                const SizedBox(width: 18),
                 Text(
                   'Tema oscuro',
-                  style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+                  style: TextStyle(fontSize: 18, color: colorScheme.onSurface),
                 ),
               ],
             ),
@@ -154,19 +156,19 @@ class SettingsPage extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
             Icon(
               isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              size: 20,
+              size: 26,
               color: isSelected ? colorScheme.primary : colorScheme.outline,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 17,
                 color: isSelected ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),

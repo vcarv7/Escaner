@@ -4,8 +4,8 @@ class OverlayMessage {
   static const Duration defaultDuration = Duration(seconds: 2);
   static const double elevation = 8.0;
   static const double radius = 12.0;
-  static const double paddingH = 24.0;
-  static const double paddingV = 12.0;
+  static const double paddingH = 32.0;
+  static const double paddingV = 16.0;
 
   static void show(
     BuildContext context,
@@ -123,6 +123,7 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
+                    fontSize: 18,
                   ),
                   textAlign: TextAlign.center,
                 ),

@@ -33,6 +33,12 @@ class ScanItemConstants {
   static const double cardMargin = 10.0;
   static const double avatarRadius = 20.0;
 
+  static const double nombreFontSize = 20.0;
+  static const double infoFontSize = 16.0;
+  static const double badgeFontSize = 14.0;
+  static const double cardPadding = 20.0;
+  static const double badgeIconSize = 56.0;
+
   static IconData getSolapineIcon() => Icons.tag;
   static IconData getTarjetaIcon() => Icons.credit_card;
 

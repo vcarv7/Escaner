@@ -37,22 +37,19 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    final position = _scrollController.position;
+    
+    if (position.pixels >= position.maxScrollExtent - 200) {
       if (!_isLoadingMore && widget.provider.hasMoreData) {
         _loadNextPage();
       }
     }
+
     final hasEnoughItems = widget.provider.items.length > 5;
-    if (hasEnoughItems) {
-      if (!_showScrollTopButton && _scrollController.offset > 500) {
-        setState(() => _showScrollTopButton = true);
-      } else if (_showScrollTopButton && _scrollController.offset <= 500) {
-        setState(() => _showScrollTopButton = false);
-      }
-    } else {
-      if (_showScrollTopButton) {
-        setState(() => _showScrollTopButton = false);
-      }
+    final shouldShowButton = hasEnoughItems && _scrollController.offset > 500;
+    
+    if (_showScrollTopButton != shouldShowButton) {
+      setState(() => _showScrollTopButton = shouldShowButton);
     }
   }
 
@@ -69,17 +66,19 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   void _scrollToTop() {
-    _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   List<ScanItem> _filtrarItems(List<ScanItem> items, FiltroData filtro) {
     return items.where((item) {
-      final esMismoDia = item.scannedAt.year == filtro.fecha.year &&
-          item.scannedAt.month == filtro.fecha.month &&
-          item.scannedAt.day == filtro.fecha.day;
+      final fechaValida = filtro.fechaEnRango(item.scannedAt);
       final mismoEvento = filtro.evento == null || 
           (item.evento != null && item.evento!.displayName == filtro.eventoNombre);
-      return esMismoDia && mismoEvento;
+      return fechaValida && mismoEvento;
     }).toList();
   }
 
@@ -92,27 +91,31 @@ class _SolapinesListState extends State<SolapinesList> {
       builder: (context, provider, _) {
         final allItems = provider.items;
         final itemsFiltrados = _filtrarItems(allItems, filtro);
-        final solapineCount = itemsFiltrados.where((item) => item.type == ScanType.solapine).length;
-        final tarjetaCount = itemsFiltrados.where((item) => item.type == ScanType.tarjeta).length;
+        
+        final solapineCount = itemsFiltrados
+            .where((item) => item.type == ScanType.solapine)
+            .length;
+        final tarjetaCount = itemsFiltrados
+            .where((item) => item.type == ScanType.tarjeta)
+            .length;
 
         return Stack(
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, solapineCount, tarjetaCount, itemsFiltrados.isNotEmpty, filtro),
+                _buildHeader(context, solapineCount, tarjetaCount),
                 _buildFiltroChips(context, filtro),
                 Expanded(child: _buildList(context, itemsFiltrados)),
               ],
             ),
-            if (_showScrollTopButton && itemsFiltrados.isNotEmpty && itemsFiltrados.length > 5)
+            if (_showScrollTopButton && itemsFiltrados.length > 5)
               Positioned(
                 bottom: 16,
                 right: 16,
                 child: FloatingActionButton.small(
                   heroTag: 'scrollTop',
                   onPressed: _scrollToTop,
-                  backgroundColor: Theme.of(context).colorScheme.primary,
                   child: const Icon(Icons.arrow_upward, color: Colors.white),
                 ),
               ),
@@ -122,47 +125,53 @@ class _SolapinesListState extends State<SolapinesList> {
     );
   }
 
+  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final verticalPadding = screenHeight < 600 ? 4.0 : 8.0;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
+      child: Text(
+        ScanItemConstants.getCountText(solapineCount, tarjetaCount),
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    );
+  }
+
   Widget _buildFiltroChips(BuildContext context, FiltroData filtro) {
-    if (filtro.evento == null) return const SizedBox.shrink();
+    if (filtro.evento == null && filtro.tipoRangoEffective == TipoRangoFecha.unico) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Wrap(
         spacing: 8,
         children: [
-          Chip(
-            label: Text(
-              'Fecha: ${filtro.fecha.day}/${filtro.fecha.month}/${filtro.fecha.year}',
-              style: const TextStyle(fontSize: 12),
+          if (filtro.tipoRangoEffective != TipoRangoFecha.unico)
+            Chip(
+              label: Text(
+                filtro.fechaDisplayText,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onDeleted: () {
+                context.read<SettingsProvider>().setFiltro(
+                  FiltroData(fecha: DateTime.now()),
+                );
+              },
             ),
-            onDeleted: () {
-              context.read<SettingsProvider>().setFiltro(FiltroData(fecha: filtro.fecha, evento: null));
-            },
-          ),
-          Chip(
-            label: Text(filtro.evento!.displayName, style: const TextStyle(fontSize: 12)),
-            onDeleted: () {
-              context.read<SettingsProvider>().setFiltro(FiltroData(fecha: filtro.fecha, evento: null));
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount, bool hasItems, FiltroData filtro) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final verticalPadding = screenHeight < 600 ? 4.0 : 8.0;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            ScanItemConstants.getCountText(solapineCount, tarjetaCount),
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          if (filtro.evento != null)
+            Chip(
+              label: Text(
+                filtro.evento!.displayName,
+                style: const TextStyle(fontSize: 12),
+              ),
+              onDeleted: () {
+                context.read<SettingsProvider>().setFiltro(
+                  filtro.copyWith(evento: null),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -177,12 +186,12 @@ class _SolapinesListState extends State<SolapinesList> {
       );
     }
 
+    final horizontalPadding = MediaQuery.of(context).size.width > 400 ? 16.0 : 8.0;
+
     return ListView.builder(
       controller: _scrollController,
       itemCount: items.length + (_isLoadingMore ? 1 : 0),
-      padding: EdgeInsets.symmetric(
-        horizontal: MediaQuery.of(context).size.width > 400 ? 16 : 8,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       itemBuilder: (context, index) {
         if (index >= items.length) {
           return const Padding(
@@ -190,8 +199,7 @@ class _SolapinesListState extends State<SolapinesList> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final item = items[index];
-        return ScanItemCard(item: item);
+        return ScanItemCard(item: items[index]);
       },
     );
   }

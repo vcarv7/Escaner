@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> {
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Código no reservado');
+        OverlayMessage.warning(context, 'Solapín no válido');
       }
     } else {
       if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Código no reservado');
+        OverlayMessage.warning(context, 'Solapín no válido');
       }
     } else {
       if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {

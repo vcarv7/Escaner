@@ -12,8 +12,7 @@ class ScanItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDuplicate = item.isDuplicate || 
-        item.status == ScanStatus.duplicate || 
+    final isDuplicate = item.status == ScanStatus.duplicate || 
         item.status == ScanStatus.notReservedDuplicate;
     final isSolapine = item.type == ScanType.solapine;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -21,69 +20,20 @@ class ScanItemCard extends StatelessWidget {
     final card = Card(
       margin: const EdgeInsets.only(bottom: ScanItemConstants.cardMargin),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(ScanItemConstants.cardPadding),
         child: Row(
           children: [
             _buildBadge(isSolapine, isDuplicate),
-            const SizedBox(width: 12),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (item.personaNombre != null)
-                    Text(
-                      item.personaNombre!,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDuplicate
-                                ? ScanItemColors.duplicate
-                                : null,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  if (item.personaNombre == null)
-                    Text(
-                      item.code,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: isDuplicate
-                                ? ScanItemColors.duplicate
-                                : null,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
+                  _buildNombre(isDuplicate),
+                  const SizedBox(height: 6),
+                  _buildInfo(context),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      if (item.personaSolapine != null) ...[
-                        Text(
-                          'Solapín: ${item.personaSolapine}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      if (item.evento != null)
-                        Text(
-                          item.evento!.displayName,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        ScanItemConstants.formatDate(item.scannedAt),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(width: 8),
-                      _buildStatusBadge(),
-                    ],
-                  ),
+                  _buildBadgeRow(context),
                 ],
               ),
             ),
@@ -94,7 +44,7 @@ class ScanItemCard extends StatelessWidget {
 
     if (screenWidth > 600) {
       return ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 600),
+        constraints: const BoxConstraints(maxWidth: 600),
         child: card,
       );
     }
@@ -102,45 +52,106 @@ class ScanItemCard extends StatelessWidget {
     return card;
   }
 
-  Widget _buildStatusBadge() {
-    Color backgroundColor;
-    Color textColor;
-    String text;
+  Widget _buildNombre(bool isDuplicate) {
+    final color = isDuplicate ? ScanItemColors.duplicate : null;
 
-    switch (item.status) {
-      case ScanStatus.reserved:
-        backgroundColor = Colors.green.shade100;
-        textColor = Colors.green.shade800;
-        text = 'Reservado';
-        break;
-      case ScanStatus.notReserved:
-        backgroundColor = Colors.orange.shade100;
-        textColor = Colors.orange.shade800;
-        text = 'No reservado';
-        break;
-      case ScanStatus.duplicate:
-        backgroundColor = Colors.red.shade100;
-        textColor = Colors.red.shade800;
-        text = 'Duplicado';
-        break;
-      case ScanStatus.notReservedDuplicate:
-        backgroundColor = Colors.red.shade100;
-        textColor = Colors.red.shade800;
-        text = 'No reservado + Dup.';
-        break;
+    if (item.status == ScanStatus.reserved || item.status == ScanStatus.duplicate) {
+      if (item.personaNombre != null) {
+        return Text(
+          item.personaNombre!,
+          style: TextStyle(
+            fontSize: ScanItemConstants.nombreFontSize,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        );
+      }
+      return const SizedBox.shrink();
     }
 
+    return Text(
+      'No Reservado',
+      style: TextStyle(
+        fontSize: ScanItemConstants.nombreFontSize,
+        fontWeight: FontWeight.w600,
+        color: Colors.orange.shade800,
+      ),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+    );
+  }
+
+  Widget _buildInfo(BuildContext context) {
+    final textStyle = TextStyle(
+      fontSize: ScanItemConstants.infoFontSize,
+      color: Theme.of(context).colorScheme.primary,
+    );
+
+    if (item.status == ScanStatus.reserved || item.status == ScanStatus.duplicate) {
+      if (item.personaSolapine != null) {
+        return Row(
+          children: [
+            Text(
+              'Solapín: ${item.personaSolapine}',
+              style: textStyle.copyWith(color: null),
+            ),
+            if (item.evento != null) ...[
+              const SizedBox(width: 12),
+              Text(item.evento!.displayName, style: textStyle),
+            ],
+          ],
+        );
+      }
+      if (item.evento != null) {
+        return Text(item.evento!.displayName, style: textStyle);
+      }
+      return const SizedBox.shrink();
+    }
+
+    if (item.evento != null) {
+      return Text(item.evento!.displayName, style: textStyle);
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _buildBadgeRow(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          ScanItemConstants.formatDate(item.scannedAt),
+          style: const TextStyle(fontSize: ScanItemConstants.infoFontSize),
+        ),
+        const SizedBox(width: 12),
+        _buildStatusBadge(),
+      ],
+    );
+  }
+
+  Widget _buildStatusBadge() {
+    if (item.status == ScanStatus.notReserved) {
+      return const SizedBox.shrink();
+    }
+
+    final (bgColor, textColor, text) = switch (item.status) {
+      ScanStatus.reserved => (Colors.green.shade100, Colors.green.shade800, 'Reservado'),
+      ScanStatus.duplicate => (Colors.red.shade100, Colors.red.shade800, 'Duplicado'),
+      ScanStatus.notReservedDuplicate => (Colors.red.shade100, Colors.red.shade800, 'Duplicado'),
+      _ => (Colors.green.shade100, Colors.green.shade800, 'Reservado'),
+    };
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: textColor,
-          fontSize: 10,
+          fontSize: ScanItemConstants.badgeFontSize,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -148,7 +159,7 @@ class ScanItemCard extends StatelessWidget {
   }
 
   Widget _buildBadge(bool isSolapine, bool isDuplicate) {
-    final backgroundColor = isDuplicate
+    final bgColor = isDuplicate
         ? ScanItemColors.duplicateBackground
         : ScanItemColors.getBackgroundColor(isSolapine);
     final iconColor = isDuplicate
@@ -159,16 +170,16 @@ class ScanItemCard extends StatelessWidget {
         : ScanItemConstants.getTarjetaIcon();
 
     return Container(
-      width: 44,
-      height: 44,
+      width: ScanItemConstants.badgeIconSize,
+      height: ScanItemConstants.badgeIconSize,
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Icon(
         isDuplicate ? Icons.warning_rounded : icon,
         color: iconColor,
-        size: 22,
+        size: 28,
       ),
     );
   }

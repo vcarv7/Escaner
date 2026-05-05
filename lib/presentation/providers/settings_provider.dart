@@ -5,15 +5,41 @@ import 'package:vibration/vibration.dart';
 
 enum ScanFeedback { none, sound, vibration }
 
+enum TipoRangoFecha { unico, predefinido, personalizado }
+
+enum RangoPredefinido { hoy, ayer, ultimos7, ultimos30, estaSemana, esteMes }
+
 class FiltroData {
   final DateTime fecha;
+  final TipoRangoFecha tipoRango;
+  final RangoPredefinido predefinido;
+  final DateTime? fechaInicio;
+  final DateTime? fechaFin;
   final dynamic evento;
 
-  FiltroData({required this.fecha, this.evento});
+  FiltroData({
+    required this.fecha,
+    this.tipoRango = TipoRangoFecha.unico,
+    this.predefinido = RangoPredefinido.hoy,
+    this.fechaInicio,
+    this.fechaFin,
+    this.evento,
+  });
 
-  FiltroData copyWith({DateTime? fecha, dynamic evento}) {
+  FiltroData copyWith({
+    DateTime? fecha,
+    TipoRangoFecha? tipoRango,
+    RangoPredefinido? predefinido,
+    DateTime? fechaInicio,
+    DateTime? fechaFin,
+    dynamic evento,
+  }) {
     return FiltroData(
       fecha: fecha ?? this.fecha,
+      tipoRango: tipoRango ?? this.tipoRango,
+      predefinido: predefinido ?? this.predefinido,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
       evento: evento ?? this.evento,
     );
   }
@@ -27,6 +53,80 @@ class FiltroData {
     if (evento == null) return false;
     return evento.isDoble as bool;
   }
+
+  TipoRangoFecha get tipoRangoEffective => tipoRango;
+
+  RangoPredefinido get predefinidoEffective => predefinido ?? RangoPredefinido.hoy;
+
+  bool fechaEnRango(DateTime fechaItem) {
+    switch (tipoRangoEffective) {
+      case TipoRangoFecha.unico:
+        return fechaItem.year == fecha.year &&
+            fechaItem.month == fecha.month &&
+            fechaItem.day == fecha.day;
+      case TipoRangoFecha.predefinido:
+        return _fechaEnPredefinido(fechaItem);
+      case TipoRangoFecha.personalizado:
+        if (fechaInicio == null || fechaFin == null) return false;
+        return !fechaItem.isBefore(fechaInicio!) && !fechaItem.isAfter(fechaFin!);
+    }
+  }
+
+  bool _fechaEnPredefinido(DateTime fechaItem) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    switch (predefinidoEffective) {
+      case RangoPredefinido.hoy:
+        return fechaItem.year == today.year &&
+            fechaItem.month == today.month &&
+            fechaItem.day == today.day;
+      case RangoPredefinido.ayer:
+        final yesterday = today.subtract(const Duration(days: 1));
+        return fechaItem.year == yesterday.year &&
+            fechaItem.month == yesterday.month &&
+            fechaItem.day == yesterday.day;
+      case RangoPredefinido.ultimos7:
+        return fechaItem.isAfter(today.subtract(const Duration(days: 7)));
+      case RangoPredefinido.ultimos30:
+        return fechaItem.isAfter(today.subtract(const Duration(days: 30)));
+      case RangoPredefinido.estaSemana:
+        final inicioSemana = today.subtract(Duration(days: today.weekday - 1));
+        return !fechaItem.isBefore(inicioSemana);
+      case RangoPredefinido.esteMes:
+        final inicioMes = DateTime(today.year, today.month, 1);
+        return !fechaItem.isBefore(inicioMes);
+    }
+  }
+
+  String get fechaDisplayText {
+    switch (tipoRangoEffective) {
+      case TipoRangoFecha.unico:
+        return '${fecha.day}/${fecha.month}/${fecha.year}';
+      case TipoRangoFecha.predefinido:
+        return _getPredefinidoText();
+      case TipoRangoFecha.personalizado:
+        if (fechaInicio == null || fechaFin == null) return '';
+        return '${fechaInicio!.day}/${fechaInicio!.month} - ${fechaFin!.day}/${fechaFin!.month}';
+    }
+  }
+
+  String _getPredefinidoText() {
+    switch (predefinidoEffective) {
+      case RangoPredefinido.hoy:
+        return 'Hoy';
+      case RangoPredefinido.ayer:
+        return 'Ayer';
+      case RangoPredefinido.ultimos7:
+        return 'Últimos 7 días';
+      case RangoPredefinido.ultimos30:
+        return 'Últimos 30 días';
+      case RangoPredefinido.estaSemana:
+        return 'Esta semana';
+      case RangoPredefinido.esteMes:
+        return 'Este mes';
+    }
+  }
 }
 
 class SettingsProvider extends ChangeNotifier {
@@ -37,7 +137,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _isDarkTheme = false;
   ScanFeedback _scanFeedback = ScanFeedback.none;
   String _csvUrl = '';
-  FiltroData _filtro = FiltroData(fecha: DateTime.now(), evento: null);
+  FiltroData _filtro = FiltroData(fecha: DateTime.now());
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   bool get isDarkTheme => _isDarkTheme;
