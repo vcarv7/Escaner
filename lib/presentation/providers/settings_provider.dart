@@ -9,6 +9,8 @@ enum TipoRangoFecha { unico, predefinido, personalizado }
 
 enum RangoPredefinido { hoy, ayer, ultimos7, ultimos30, estaSemana, esteMes }
 
+enum OrdenScaneados { ascendente, descendente }
+
 class FiltroData {
   final DateTime fecha;
   final TipoRangoFecha tipoRango;
@@ -133,17 +135,20 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyDarkTheme = 'is_dark_theme';
   static const _keyScanFeedback = 'scan_feedback';
   static const _keyCsvUrl = 'csv_url';
+  static const _keyOrdenScaneados = 'orden_scaneados';
 
   bool _isDarkTheme = false;
   ScanFeedback _scanFeedback = ScanFeedback.none;
   String _csvUrl = '';
   FiltroData _filtro = FiltroData(fecha: DateTime.now());
+  OrdenScaneados _ordenScaneados = OrdenScaneados.descendente;
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   bool get isDarkTheme => _isDarkTheme;
   ScanFeedback get scanFeedback => _scanFeedback;
   String get csvUrl => _csvUrl;
   FiltroData get filtro => _filtro;
+  OrdenScaneados get ordenScaneados => _ordenScaneados;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -151,6 +156,8 @@ class SettingsProvider extends ChangeNotifier {
     final feedbackIndex = prefs.getInt(_keyScanFeedback) ?? 0;
     _scanFeedback = ScanFeedback.values[feedbackIndex.clamp(0, 2)];
     _csvUrl = prefs.getString(_keyCsvUrl) ?? '';
+    final ordenIndex = prefs.getInt(_keyOrdenScaneados) ?? 1;
+    _ordenScaneados = OrdenScaneados.values[ordenIndex.clamp(0, 1)];
     notifyListeners();
   }
 
@@ -177,6 +184,13 @@ class SettingsProvider extends ChangeNotifier {
 
   void setFiltro(FiltroData filtro) {
     _filtro = filtro;
+    notifyListeners();
+  }
+
+  Future<void> setOrdenScaneados(OrdenScaneados value) async {
+    _ordenScaneados = value;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyOrdenScaneados, value.index);
     notifyListeners();
   }
 

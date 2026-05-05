@@ -82,20 +82,23 @@ class _SolapinesListState extends State<SolapinesList> {
     }).toList();
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final filtro = settings.filtro;
+    final orden = settings.ordenScaneados;
 
     return Consumer<ScanProvider>(
       builder: (context, provider, _) {
         final allItems = provider.items;
         final itemsFiltrados = _filtrarItems(allItems, filtro);
         
-        final solapineCount = itemsFiltrados
+        final sortedItems = _ordenarItems(itemsFiltrados, orden);
+        
+        final solapineCount = sortedItems
             .where((item) => item.type == ScanType.solapine)
             .length;
-        final tarjetaCount = itemsFiltrados
+        final tarjetaCount = sortedItems
             .where((item) => item.type == ScanType.tarjeta)
             .length;
 
@@ -104,12 +107,12 @@ class _SolapinesListState extends State<SolapinesList> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildHeader(context, solapineCount, tarjetaCount),
+                _buildHeader(context, solapineCount, tarjetaCount, orden),
                 _buildFiltroChips(context, filtro),
-                Expanded(child: _buildList(context, itemsFiltrados)),
+                Expanded(child: _buildList(context, sortedItems)),
               ],
             ),
-            if (_showScrollTopButton && itemsFiltrados.length > 5)
+            if (_showScrollTopButton && sortedItems.length > 5)
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -125,15 +128,45 @@ class _SolapinesListState extends State<SolapinesList> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount) {
+  List<ScanItem> _ordenarItems(List<ScanItem> items, OrdenScaneados orden) {
+    final sorted = List<ScanItem>.from(items);
+    sorted.sort((a, b) => orden == OrdenScaneados.ascendente
+        ? a.scannedAt.compareTo(b.scannedAt)
+        : b.scannedAt.compareTo(a.scannedAt));
+    return sorted;
+  }
+
+  Widget _buildHeader(BuildContext context, int solapineCount, int tarjetaCount, OrdenScaneados orden) {
     final screenHeight = MediaQuery.of(context).size.height;
     final verticalPadding = screenHeight < 600 ? 4.0 : 8.0;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: verticalPadding),
-      child: Text(
-        ScanItemConstants.getCountText(solapineCount, tarjetaCount),
-        style: Theme.of(context).textTheme.titleMedium,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            ScanItemConstants.getCountText(solapineCount, tarjetaCount),
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          IconButton(
+            icon: Icon(
+              orden == OrdenScaneados.descendente 
+                  ? Icons.arrow_downward 
+                  : Icons.arrow_upward,
+              size: 20,
+            ),
+            tooltip: orden == OrdenScaneados.descendente 
+                ? 'Más recientes abajo' 
+                : 'Más recientes arriba',
+            onPressed: () {
+              final nuevos = orden == OrdenScaneados.descendente
+                  ? OrdenScaneados.ascendente
+                  : OrdenScaneados.descendente;
+              context.read<SettingsProvider>().setOrdenScaneados(nuevos);
+            },
+          ),
+        ],
       ),
     );
   }
