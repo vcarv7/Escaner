@@ -53,12 +53,12 @@ class FiltroData {
 
   bool get esDoble {
     if (evento == null) return false;
-    return evento.isDoble as bool;
+    return evento.isDoble;
   }
 
   TipoRangoFecha get tipoRangoEffective => tipoRango;
 
-  RangoPredefinido get predefinidoEffective => predefinido ?? RangoPredefinido.hoy;
+  RangoPredefinido get predefinidoEffective => predefinido;
 
   bool fechaEnRango(DateTime fechaItem) {
     switch (tipoRangoEffective) {

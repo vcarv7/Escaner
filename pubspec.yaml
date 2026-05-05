@@ -1,7 +1,7 @@
 name: escaner_1
 description: "Escáner de solapines"
 publish_to: 'none'
-version: 0.8.1
+version: 0.8.5
 
 environment:
   sdk: ^3.10.7
