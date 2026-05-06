@@ -1,3 +1,140 @@
-# escaner_1
+# Escáner de Solapines
 
-A new Flutter project.
+Aplicación móvil Flutter para el escaneo de códigos de barras y códigos QR, diseñada específicamente para la gestión de identificadores de solapines.
+
+## Características
+
+- Escaneo de códigos de barras y QR en tiempo real
+- Gestión de datos mediante archivos CSV
+- Almacenamiento seguro de información
+- Exportación y compartición de resultados
+- Feedback visual y sonoro al escanear
+
+## Stack Tecnológico
+
+| Tecnología | Propósito |
+|------------|-----------|
+| Flutter 3.x | Framework UI multiplataforma |
+| Provider | Gestión de estado |
+| mobile_scanner | Escaneo de códigos de barras/QR |
+| excel_community | Manipulación de archivos Excel/CSV |
+| flutter_secure_storage | Almacenamiento cifrado |
+| audioplayers | Reproducción de sonidos |
+| vibration | Feedback háptico |
+
+## Estructura del Proyecto
+
+```
+lib/
+├── main.dart                 # Punto de entrada
+├── app.dart                  # Configuración global
+├── core/                     # Configuración compartida
+│   ├── constants/            # Constantes de la aplicación
+│   ├── theme/               # Tema y estilos
+│   └── utils/               # Utilidades generales
+├── data/                     # Capa de datos
+│   ├── datasources/         # Fuentes de datos (Local + CSV)
+│   ├── models/              # Modelos de datos
+│   └── repositories/        # Implementación de repositorios
+├── domain/                   # Capa de dominio
+│   ├── entities/           # Entidades del negocio
+│   └── repositories/        # Interfaces de repositorios
+├── presentation/            # Capa de presentación
+│   ├── pages/              # Pantallas
+│   ├── widgets/            # Widgets reutilizables
+│   └── providers/           # Providers de estado
+└── injection.dart          # Inyección de dependencias
+```
+
+## Requisitos Previos
+
+- Flutter SDK 3.x o superior
+- Dart 3.x o superior
+- Android SDK (para Android)
+- Xcode (para iOS)
+
+## Instalación
+
+1. Clonar el repositorio:
+   ```bash
+   git clone <url-repositorio>
+   cd escaner_1
+   ```
+
+2. Instalar dependencias:
+   ```bash
+   flutter pub get
+   ```
+
+3. Ejecutar la aplicación:
+   ```bash
+   flutter run
+   ```
+
+## Comandos de Desarrollo
+
+```bash
+# Ejecutar app en modo desarrollo
+flutter run
+
+# Analizar código (lint)
+flutter analyze
+
+# Build debug APK
+flutter build apk --debug
+
+# Build release APK
+flutter build apk --release
+
+# Actualizar dependencias
+flutter pub get
+
+# Generar icons de app
+flutter pub run flutter_launcher_icons
+```
+
+## Configuración
+
+### Permisos requeridos (Android)
+
+Agregar en `android/app/src/main/AndroidManifest.xml`:
+```xml
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.VIBRATE" />
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+### Permisos requeridos (iOS)
+
+Agregar en `ios/Runner/Info.plist`:
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Se requiere acceso a la cámara para escanear códigos</string>
+```
+
+## Contribución
+
+1. Crear una rama feature: `feature/nombre-feature`
+2. Realizar los cambios y commits necesarios
+3. Crear un Pull Request hacia la rama `main`
+4. Ejecutar `flutter analyze` antes de commit
+5. Mantener la separación de capas (UI/Datos/Dominio)
+
+## Convenciones de Código
+
+- **Archivos**: Kebab-case (`login_page.dart`)
+- **Clases**: PascalCase (`class LoginPage`)
+- **Variables/Funciones**: snake_case
+- Máximo 80-100 líneas por función
+- Usar `const` siempre que sea posible
+
+## Seguridad
+
+- No hardcodear credenciales o URLs en código
+- Usar variables de entorno para secrets
+- Validar datos del servidor antes de usarlos
+- Usar almacenamiento cifrado para datos sensibles
+
+## Licencia
+
+MIT License
