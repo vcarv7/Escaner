@@ -26,7 +26,7 @@ class AddManualDialog extends StatelessWidget {
             controller: controller,
             style: const TextStyle(fontSize: 18),
             decoration: const InputDecoration(
-              hintText: 'Ingresa el código',
+              hintText: 'Ingresa el número de solapín',
               hintStyle: TextStyle(fontSize: 16),
               border: OutlineInputBorder(),
             ),

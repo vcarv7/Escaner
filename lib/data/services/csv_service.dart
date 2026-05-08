@@ -35,26 +35,46 @@ class CsvService {
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
-      if (i == 0 && line.contains('codigo')) continue;
+      if (i == 0) continue;
 
-      final parts = line.split(',');
-      if (parts.length < 4) continue;
+      final parts = _parseCsvLine(line);
+      if (parts.length < 22) continue;
 
-      final codigo = parts[0].trim();
-      final solapine = parts[1].trim();
-      final nombre = parts[2].trim();
-      final apellidos = parts[3].trim();
+      final idPersona = parts[0].replaceAll('"', '').trim();
+      final nombreCompleto = parts[4].replaceAll('"', '').trim();
+      final solapin = parts[6].replaceAll('"', '').trim();
+      final codigoSolapin = parts[21].replaceAll('"', '').trim();
 
-      if (codigo.isNotEmpty) {
+      if (idPersona.isNotEmpty) {
         personas.add(Persona(
-          codigo: codigo,
-          solapine: solapine,
-          nombre: nombre,
-          apellidos: apellidos,
+          idPersona: idPersona,
+          codigoSolapin: codigoSolapin,
+          solapin: solapin,
+          nombreCompleto: nombreCompleto,
         ));
       }
     }
     return personas;
+  }
+
+  static List<String> _parseCsvLine(String line) {
+    final List<String> result = [];
+    final buffer = StringBuffer();
+    bool inQuotes = false;
+
+    for (int i = 0; i < line.length; i++) {
+      final char = line[i];
+      if (char == '"') {
+        inQuotes = !inQuotes;
+      } else if (char == ',' && !inQuotes) {
+        result.add(buffer.toString());
+        buffer.clear();
+      } else {
+        buffer.write(char);
+      }
+    }
+    result.add(buffer.toString());
+    return result;
   }
 
   static Future<List<Persona>> loadFromCache() async {

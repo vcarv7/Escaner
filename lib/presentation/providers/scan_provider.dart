@@ -35,11 +35,15 @@ class ScanProvider extends ChangeNotifier {
   }
 
   bool addItem(String code, Evento evento, List<Persona> personas) {
-    if (!_isValidCode(code)) return false;
+    return addItemFromScanner(code, evento, personas);
+  }
 
-    final existingIndex = _items.indexWhere((s) => s.code == code);
-    final persona = _findPersonaByCodigo(code, personas);
-    final type = _detectType(code);
+  bool addItemFromScanner(String code, Evento evento, List<Persona> personas) {
+    final codeNormalized = code.toUpperCase();
+    if (!_isValidCode(codeNormalized)) return false;
+
+    final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
+    final persona = _findPersonaByCodigoSolapin(codeNormalized, personas);
 
     if (existingIndex != -1) {
       final existing = _items[existingIndex];
@@ -63,12 +67,12 @@ class ScanProvider extends ChangeNotifier {
     }
 
     _items.add(ScanItem(
-      code: code,
-      type: type,
+      code: codeNormalized,
+      type: ScanType.solapine,
       isDuplicate: false,
       scannedAt: DateTime.now(),
       evento: evento,
-      personaSolapine: persona?.solapine,
+      personaSolapine: persona?.solapin,
       personaNombre: persona?.nombreCompleto,
       status: status,
     ));
@@ -78,9 +82,64 @@ class ScanProvider extends ChangeNotifier {
     return true;
   }
 
-  Persona? _findPersonaByCodigo(String code, List<Persona> personas) {
+  bool addItemManual(String code, Evento evento, List<Persona> personas) {
+    final codeNormalized = code.toUpperCase();
+    if (!_isValidCode(codeNormalized)) return false;
+
+    final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
+    final persona = _findPersonaBySolapin(codeNormalized, personas);
+
+    if (existingIndex != -1) {
+      final existing = _items[existingIndex];
+      final newStatus = persona != null
+          ? ScanStatus.duplicate
+          : ScanStatus.notReservedDuplicate;
+      _items[existingIndex] = existing.copyWith(
+        isDuplicate: true,
+        status: newStatus,
+      );
+      _saveItems();
+      notifyListeners();
+      return false;
+    }
+
+    ScanStatus status;
+    if (persona != null) {
+      status = ScanStatus.reserved;
+    } else {
+      status = ScanStatus.notReserved;
+    }
+
+    _items.add(ScanItem(
+      code: codeNormalized,
+      type: ScanType.solapine,
+      isDuplicate: false,
+      scannedAt: DateTime.now(),
+      evento: evento,
+      personaSolapine: persona?.solapin,
+      personaNombre: persona?.nombreCompleto,
+      status: status,
+    ));
+    _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
+    _saveItems();
+    notifyListeners();
+    return true;
+  }
+
+  Persona? _findPersonaByCodigoSolapin(String code, List<Persona> personas) {
+    final codeLower = code.toLowerCase();
     for (final persona in personas) {
-      if (persona.codigo == code) {
+      if (persona.codigoSolapin.toLowerCase() == codeLower) {
+        return persona;
+      }
+    }
+    return null;
+  }
+
+  Persona? _findPersonaBySolapin(String code, List<Persona> personas) {
+    final codeLower = code.toLowerCase();
+    for (final persona in personas) {
+      if (persona.solapin.toLowerCase() == codeLower) {
         return persona;
       }
     }
@@ -93,17 +152,8 @@ class ScanProvider extends ChangeNotifier {
     return length >= AppConstants.minCodeLength && length <= AppConstants.maxCodeLength;
   }
 
-  ScanType _detectType(String code) {
-    if (code.length >= AppConstants.minCodeLength &&
-        code.length <= AppConstants.maxCodeLength &&
-        RegExp(r'^[A-Za-z]+$').hasMatch(code)) {
-      return ScanType.tarjeta;
-    }
-    return ScanType.solapine;
-  }
-
   void deleteItem(ScanItem item) {
-    _items.removeWhere((i) => i.code == item.code);
+    _items.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
     _trashItems.add(item);
     _saveItems();
     _saveTrash();
@@ -111,7 +161,7 @@ class ScanProvider extends ChangeNotifier {
   }
 
   void restoreItem(ScanItem item) {
-    _trashItems.removeWhere((i) => i.code == item.code);
+    _trashItems.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
     _items.add(item);
     _saveItems();
     _saveTrash();

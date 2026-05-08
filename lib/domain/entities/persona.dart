@@ -1,33 +1,31 @@
 class Persona {
-  final String codigo;
-  final String solapine;
-  final String nombre;
-  final String apellidos;
+  final String idPersona;
+  final String codigoSolapin;
+  final String solapin;
+  final String nombreCompleto;
 
   const Persona({
-    required this.codigo,
-    required this.solapine,
-    required this.nombre,
-    required this.apellidos,
+    required this.idPersona,
+    required this.codigoSolapin,
+    required this.solapin,
+    required this.nombreCompleto,
   });
-
-  String get nombreCompleto => '$nombre $apellidos';
 
   factory Persona.fromMap(Map<String, dynamic> map) {
     return Persona(
-      codigo: map['codigo'] as String? ?? '',
-      solapine: map['solapine'] as String? ?? '',
-      nombre: map['nombre'] as String? ?? '',
-      apellidos: map['apellidos'] as String? ?? '',
+      idPersona: map['idPersona'] as String? ?? '',
+      codigoSolapin: map['codigoSolapin'] as String? ?? '',
+      solapin: map['solapin'] as String? ?? '',
+      nombreCompleto: map['nombreCompleto'] as String? ?? '',
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'codigo': codigo,
-      'solapine': solapine,
-      'nombre': nombre,
-      'apellidos': apellidos,
+      'idPersona': idPersona,
+      'codigoSolapin': codigoSolapin,
+      'solapin': solapin,
+      'nombreCompleto': nombreCompleto,
     };
   }
 }

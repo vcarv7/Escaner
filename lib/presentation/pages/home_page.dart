@@ -47,16 +47,16 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = provider.addItem(code, eventoProvider.eventoActual!, csvProvider.personas);
+    final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
       final item = provider.items.last;
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Solapín no válido');
+        OverlayMessage.warning(context, 'Código no encontrado en lista');
       }
     } else {
-      if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {
+      if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
         OverlayMessage.error(context, 'No reservado y duplicado');
       } else {
         OverlayMessage.error(context, 'Duplicado');
@@ -76,16 +76,16 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
       return;
     }
-    final isNew = provider.addItem(code, eventoProvider.eventoActual!, csvProvider.personas);
+    final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
       final item = provider.items.last;
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Solapín no válido');
+        OverlayMessage.warning(context, 'Código no encontrado en lista');
       }
     } else {
-      if (provider.items.any((i) => i.code == code && i.status == ScanStatus.notReservedDuplicate)) {
+      if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
         OverlayMessage.error(context, 'No reservado y duplicado');
       } else {
         OverlayMessage.error(context, 'Duplicado');
