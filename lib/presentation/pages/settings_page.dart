@@ -4,6 +4,7 @@ import '../../core/constants/app_constants.dart';
 import '../providers/settings_provider.dart';
 import '../providers/csv_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
+import '../widgets/common/math_curve_loader.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -254,7 +255,18 @@ class _UpdateButton extends StatelessWidget {
               }
             },
             icon: csvProvider.isLoading
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: MathCurveLoader.epicycloid(
+                      size: 24,
+                      color: Theme.of(ctx).colorScheme.primary,
+                      duration: const Duration(milliseconds: 1200),
+                      particleCount: 40,
+                      trailSpan: 0.4,
+                      strokeWidth: 3,
+                    ),
+                  )
                 : const Icon(Icons.download),
             label: Text(csvProvider.isLoading ? 'Descargando...' : 'Actualizar Personas'),
           ),

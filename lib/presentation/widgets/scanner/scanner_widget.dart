@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validation_utils.dart';
 import 'scanner_overlay.dart';
 import '../overlay/overlay_message.dart';
+import '../common/math_curve_loader.dart';
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
@@ -111,15 +112,20 @@ class _ScannerWidgetState extends State<ScannerWidget> {
               if (_isProcessing)
                 Container(
                   color: Colors.black.withValues(alpha: 0.5),
-                  child: const Center(
+                  child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(
+                        MathCurveLoader.epicycloid(
+                          size: 80,
                           color: Colors.white,
+                          duration: const Duration(milliseconds: 1800),
+                          particleCount: 60,
+                          trailSpan: 0.4,
+                          strokeWidth: 4,
                         ),
-                        SizedBox(height: 8),
-                        Text(
+                        const SizedBox(height: 8),
+                        const Text(
                           'Escáner en pausa...',
                           style: TextStyle(
                             color: Colors.white,

@@ -13,6 +13,7 @@ import '../widgets/home_nav_bar.dart';
 import '../widgets/dialogs/add_manual_dialog.dart';
 import '../widgets/drawer/app_drawer.dart';
 import '../widgets/overlay/overlay_message.dart';
+import '../widgets/common/math_curve_loader.dart';
 import 'settings_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -126,7 +127,14 @@ class _HomePageState extends State<HomePage> {
         return Consumer<ScanProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading) {
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+              return Scaffold(
+                body: Center(
+                  child: MathCurveLoader.epicycloid(
+                    size: 100,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              );
             }
 
             return Scaffold(

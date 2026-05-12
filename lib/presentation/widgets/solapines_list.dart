@@ -6,6 +6,7 @@ import '../providers/settings_provider.dart';
 import 'scan_item/scan_item_constants.dart';
 import 'scan_item/scan_item_card.dart';
 import 'common/empty_state.dart';
+import 'common/math_curve_loader.dart';
 
 class SolapinesList extends StatefulWidget {
   final ScanProvider provider;
@@ -227,9 +228,18 @@ class _SolapinesListState extends State<SolapinesList> {
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       itemBuilder: (context, index) {
         if (index >= items.length) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: MathCurveLoader.epicycloid(
+                size: 60,
+                color: Theme.of(context).colorScheme.primary,
+                duration: const Duration(milliseconds: 1500),
+                particleCount: 50,
+                trailSpan: 0.4,
+                strokeWidth: 4,
+              ),
+            ),
           );
         }
         return ScanItemCard(item: items[index]);

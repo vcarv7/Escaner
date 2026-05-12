@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'math_curve_loader.dart';
 
 class ConnectionIndicator extends StatelessWidget {
   final bool isConnected;
@@ -28,9 +29,13 @@ class ConnectionIndicator extends StatelessWidget {
             ? SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                child: MathCurveLoader.epicycloid(
+                  size: 20,
                   color: color,
+                  duration: const Duration(milliseconds: 1000),
+                  particleCount: 30,
+                  trailSpan: 0.35,
+                  strokeWidth: 2.5,
                 ),
               )
             : Icon(icon, color: color),
