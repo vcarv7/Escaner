@@ -43,6 +43,10 @@ app.*.map.json
 .agents/
 skills-lock.json
 
+# Test generated mocks
+test/*.mocks.dart
+.mocks/
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
