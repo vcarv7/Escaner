@@ -185,10 +185,43 @@ class SettingsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
-      child: ListTile(
-        leading: Icon(Icons.info_outline, size: 24, color: colorScheme.onSurface),
-        title: Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-        trailing: Text(_getVersion(), style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+                Text(_getVersion(), style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                'Todos los Derechos Reservados UCI',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: Text(
+                '© 2026',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
