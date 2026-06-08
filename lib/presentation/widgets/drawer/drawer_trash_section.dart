@@ -43,24 +43,30 @@ class DrawerTrashSection extends StatelessWidget {
                   horizontal: DrawerConstants.spacingSmall,
                   vertical: DrawerConstants.spacingSmall / 2,
                 ),
-                child: ElevatedButton.icon(
-                  onPressed: () => provider.restoreAll(),
-                  icon: const Icon(Icons.restore, size: DrawerConstants.iconSize),
-                  label: Text('Restaurar todos ($itemCount)'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DrawerColors.success,
-                    foregroundColor: Colors.white,
+                child: Semantics(
+                  label: 'Restaurar todos los elementos de la papelera',
+                  child: ElevatedButton.icon(
+                    onPressed: () => provider.restoreAll(),
+                    icon: const Icon(Icons.restore, size: DrawerConstants.iconSize),
+                    label: Text('Restaurar todos ($itemCount)'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: DrawerColors.success,
+                      foregroundColor: Colors.white,
+                    ),
                   ),
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.all(DrawerConstants.spacingSmall),
-                child: TextButton.icon(
-                  onPressed: () => _showClearDialog(context, provider),
-                  icon: const Icon(Icons.delete_sweep, color: DrawerColors.error),
-                  label: const Text(
-                    'Vaciar papelera',
-                    style: TextStyle(color: DrawerColors.error),
+                child: Semantics(
+                  label: 'Vaciar papelera permanentemente',
+                  child: TextButton.icon(
+                    onPressed: () => _showClearDialog(context, provider),
+                    icon: const Icon(Icons.delete_sweep, color: DrawerColors.error),
+                    label: const Text(
+                      'Vaciar papelera',
+                      style: TextStyle(color: DrawerColors.error),
+                    ),
                   ),
                 ),
               ),

@@ -17,27 +17,31 @@ class ScanItemCard extends StatelessWidget {
     final isSolapine = item.type == ScanType.solapine;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    final card = Card(
-      margin: const EdgeInsets.only(bottom: ScanItemConstants.cardMargin),
-      child: Padding(
-        padding: const EdgeInsets.all(ScanItemConstants.cardPadding),
-        child: Row(
-          children: [
-            _buildBadge(isSolapine, isDuplicate),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildNombre(isDuplicate),
-                  const SizedBox(height: 6),
-                  _buildInfo(context),
-                  const SizedBox(height: 4),
-                  _buildBadgeRow(context),
-                ],
+    final card = Semantics(
+      container: true,
+      label: '${item.personaNombre ?? "No reservado"}, solapín ${item.personaSolapine ?? item.code}, ${item.evento?.displayName ?? ""}, ${_statusLabel()}',
+      child: Card(
+        margin: const EdgeInsets.only(bottom: ScanItemConstants.cardMargin),
+        child: Padding(
+          padding: const EdgeInsets.all(ScanItemConstants.cardPadding),
+          child: Row(
+            children: [
+              _buildBadge(isSolapine, isDuplicate),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildNombre(isDuplicate),
+                    const SizedBox(height: 6),
+                    _buildInfo(context),
+                    const SizedBox(height: 4),
+                    _buildBadgeRow(context),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -156,6 +160,15 @@ class ScanItemCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statusLabel() {
+    return switch (item.status) {
+      ScanStatus.reserved => 'Reservado',
+      ScanStatus.duplicate => 'Duplicado',
+      ScanStatus.notReserved => 'No reservado',
+      ScanStatus.notReservedDuplicate => 'No reservado, duplicado',
+    };
   }
 
   Widget _buildBadge(bool isSolapine, bool isDuplicate) {
