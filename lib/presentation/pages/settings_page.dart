@@ -71,20 +71,8 @@ class SettingsPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'URL del servidor CSV',
+              'Lista de personas',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              initialValue: settings.csvUrl,
-              style: const TextStyle(fontSize: 16),
-              decoration: InputDecoration(
-                hintText: 'https://ejemplo.com/personas.csv',
-                hintStyle: TextStyle(fontSize: 14),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              ),
-              onChanged: (value) => settings.setCsvUrl(value),
             ),
             const SizedBox(height: 14),
             _UpdateButton(settings: settings, csvProvider: csvProvider),
@@ -242,10 +230,6 @@ class _UpdateButton extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: csvProvider.isLoading ? null : () async {
-              if (settings.csvUrl.isEmpty) {
-                OverlayMessage.error(ctx, 'Ingresa una URL primero');
-                return;
-              }
               final success = await csvProvider.actualizarLista(settings.csvUrl);
               if (!ctx.mounted) return;
               if (success) {
