@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:escaner_1/data/services/excel_service.dart';
-import 'package:escaner_1/data/services/filter_service.dart';
 import 'package:escaner_1/presentation/providers/scan_provider.dart';
-import 'package:escaner_1/presentation/providers/settings_provider.dart';
 import 'package:escaner_1/presentation/widgets/overlay/overlay_message.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_constants.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_menu_item.dart';
@@ -41,21 +39,22 @@ class _AppDrawerState extends State<AppDrawer>
   Future<void> _exportToExcel() async {
     if (!mounted) return;
     final scanProvider = context.read<ScanProvider>();
-    final settings = context.read<SettingsProvider>();
-    final filtro = settings.filtro;
-    final itemsFiltrados = FilterService.aplicarFiltros(scanProvider.items, filtro);
+    final items = scanProvider.items;
 
-    if (itemsFiltrados.isEmpty) {
+    if (items.isEmpty) {
       if (!mounted) return;
       OverlayMessage.warning(context, 'No hay Solapines para exportar');
       return;
     }
 
-    final filePath = await ExcelService.exportToExcel(itemsFiltrados);
+    final filePath = await ExcelService.exportToExcel(items);
 
     if (!mounted) return;
     if (filePath != null) {
       await Share.shareXFiles([XFile(filePath)], text: 'Solapines exportados');
+      if (mounted) {
+        OverlayMessage.success(context, 'Exportación completada');
+      }
     } else {
       OverlayMessage.error(context, 'Error al exportar');
     }
@@ -73,7 +72,9 @@ class _AppDrawerState extends State<AppDrawer>
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: DrawerConstants.spacingSmall),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DrawerConstants.spacingSmall,
+                ),
                 children: [
                   const Divider(),
                   _buildDataSection(context),
@@ -92,11 +93,11 @@ class _AppDrawerState extends State<AppDrawer>
     return Column(
       children: [
         Semantics(
-          label: 'Exportar Solapines a Excel',
+          label: 'Exportar códigos a Excel',
           child: DrawerMenuItem(
             icon: Icons.file_download_outlined,
-            title: 'Exportar Excel',
-            subtitle: 'Guardar Solapines en archivo',
+            title: 'Exportar',
+            subtitle: 'Obtener Solapines en un Excel',
             onTap: _exportToExcel,
           ),
         ),
