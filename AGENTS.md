@@ -60,6 +60,7 @@ lib/
 3. Ejecutar `flutter analyze` antes de commit
 4. Mantener separaciones de capas (UI/Datos/Dominio)
 5. No hardcodear credenciales
+6. Usar `git merge --no-ff` para integrar ramas (preservar historial visual)
 
 ## Comandos de Desarrollo
 
