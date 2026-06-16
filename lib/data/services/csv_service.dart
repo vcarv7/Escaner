@@ -8,19 +8,9 @@ import '../../domain/entities/persona.dart';
 class CsvService {
   static const String _cacheFileName = 'personas_cache.json';
 
-  static Map<String, String> get _headers {
-    if (AppConstants.gitlabToken.isNotEmpty) {
-      return {'PRIVATE-TOKEN': AppConstants.gitlabToken};
-    }
-    return {};
-  }
-
   static Future<bool> checkUrl() async {
     try {
-      final response = await http.head(
-        Uri.parse(AppConstants.csvUrl),
-        headers: _headers,
-      );
+      final response = await http.head(Uri.parse(AppConstants.csvUrl));
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -29,25 +19,12 @@ class CsvService {
 
   static Future<List<Persona>> downloadAndParse() async {
     try {
-      print('=== CSV DEBUG ===');
-      print('Token: ${AppConstants.gitlabToken.isEmpty ? "VACÍO" : "SET"}');
-      print('URL: ${AppConstants.csvUrl}');
-      
-      final response = await http.get(
-        Uri.parse(AppConstants.csvUrl),
-        headers: _headers,
-      );
-      
-      print('Status: ${response.statusCode}');
-      print('Body preview: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
-      print('=================');
-      
+      final response = await http.get(Uri.parse(AppConstants.csvUrl));
       if (response.statusCode != 200) {
         return [];
       }
       return _parseCsv(response.body);
     } catch (e) {
-      print('Exception: $e');
       return [];
     }
   }
