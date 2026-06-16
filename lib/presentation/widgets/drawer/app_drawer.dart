@@ -52,6 +52,9 @@ class _AppDrawerState extends State<AppDrawer>
     if (!mounted) return;
     if (filePath != null) {
       await Share.shareXFiles([XFile(filePath)], text: 'Códigos exportados');
+      if (mounted) {
+        OverlayMessage.success(context, 'Exportación completada');
+      }
     } else {
       OverlayMessage.error(context, 'Error al exportar');
     }
@@ -87,11 +90,14 @@ class _AppDrawerState extends State<AppDrawer>
   Widget _buildDataSection(BuildContext context) {
     return Column(
       children: [
-        DrawerMenuItem(
-          icon: Icons.file_download_outlined,
-          title: 'Exportar Excel',
-          subtitle: 'Guardar códigos en archivo',
-          onTap: _exportToExcel,
+        Semantics(
+          label: 'Exportar códigos a Excel',
+          child: DrawerMenuItem(
+            icon: Icons.file_download_outlined,
+            title: 'Exportar Excel',
+            subtitle: 'Guardar códigos en archivo',
+            onTap: _exportToExcel,
+          ),
         ),
       ],
     );

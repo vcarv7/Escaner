@@ -19,6 +19,9 @@ class ScanProvider extends ChangeNotifier {
   bool get hasMoreData => _hasMoreData;
   int get currentPage => _currentPage;
 
+  Stream<AutoDeleteNotification> get autoDeleteNotifications =>
+      AutoDeleteService.notifications;
+
   Future<void> init() async {
     _items = await StorageService.loadItems();
     _trashItems = await StorageService.loadTrash();

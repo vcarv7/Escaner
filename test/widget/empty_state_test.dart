@@ -71,7 +71,7 @@ void main() {
       );
 
       final iconWidget = tester.widget<Icon>(find.byIcon(Icons.search_off));
-      expect(iconWidget.color?.value, equals(Colors.red.withAlpha(204).value));
+      expect(iconWidget.color?.toARGB32(), equals(Colors.red.withAlpha(204).toARGB32()));
     });
 
     testWidgets('is centered in parent', (WidgetTester tester) async {

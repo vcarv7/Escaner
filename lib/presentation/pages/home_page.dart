@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/validation_utils.dart';
+import '../../data/services/auto_delete_service.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
@@ -26,6 +28,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  StreamSubscription<AutoDeleteNotification>? _cleanupSubscription;
 
   @override
   void initState() {
@@ -33,6 +36,36 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScanProvider>().init();
       context.read<CsvProvider>().init();
+      _escucharLimpieza();
+    });
+  }
+
+  @override
+  void dispose() {
+    _cleanupSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _escucharLimpieza() {
+    _cleanupSubscription = context.read<ScanProvider>().autoDeleteNotifications.listen((notif) {
+      if (!mounted) return;
+      final partes = <String>[];
+      if (notif.itemsMovidosAPapelera > 0) {
+        partes.add('${notif.itemsMovidosAPapelera} a la papelera');
+      }
+      if (notif.itemsEliminados > 0) {
+        partes.add('${notif.itemsEliminados} eliminados');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Semantics(
+            label: 'Limpieza automática: ${partes.join(', ')}',
+            child: Text('🧹 ${partes.join(', ')}'),
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     });
   }
 
@@ -192,12 +225,15 @@ class _HomePageState extends State<HomePage> {
                     : const SettingsPage(key: ValueKey(1)),
               ),
               floatingActionButton: _selectedIndex == 0
-                  ? FloatingActionButton(
-                      key: const ValueKey('fab_add'),
-                      onPressed: _showAddManualDialog,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      child: const Icon(Icons.add),
+                  ? Semantics(
+                      label: 'Agregar código manualmente',
+                      child: FloatingActionButton(
+                        key: const ValueKey('fab_add'),
+                        onPressed: _showAddManualDialog,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        child: const Icon(Icons.add),
+                      ),
                     )
                   : null,
               bottomNavigationBar: HomeNavBar(

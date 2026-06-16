@@ -117,10 +117,13 @@ class _SolapinesListState extends State<SolapinesList> {
               Positioned(
                 bottom: 16,
                 right: 16,
-                child: FloatingActionButton.small(
-                  heroTag: 'scrollTop',
-                  onPressed: _scrollToTop,
-                  child: const Icon(Icons.arrow_upward, color: Colors.white),
+                child: Semantics(
+                  label: 'Volver al inicio de la lista',
+                  child: FloatingActionButton.small(
+                    heroTag: 'scrollTop',
+                    onPressed: _scrollToTop,
+                    child: const Icon(Icons.arrow_upward, color: Colors.white),
+                  ),
                 ),
               ),
           ],
@@ -150,22 +153,25 @@ class _SolapinesListState extends State<SolapinesList> {
             ScanItemConstants.getCountText(solapineCount, tarjetaCount),
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          IconButton(
-            icon: Icon(
-              orden == OrdenScaneados.descendente 
-                  ? Icons.arrow_downward 
-                  : Icons.arrow_upward,
-              size: 20,
+          Semantics(
+            label: 'Cambiar orden de escaneos',
+            child: IconButton(
+              icon: Icon(
+                orden == OrdenScaneados.descendente 
+                    ? Icons.arrow_downward 
+                    : Icons.arrow_upward,
+                size: 20,
+              ),
+              tooltip: orden == OrdenScaneados.descendente 
+                  ? 'Más recientes abajo' 
+                  : 'Más recientes arriba',
+              onPressed: () {
+                final nuevos = orden == OrdenScaneados.descendente
+                    ? OrdenScaneados.ascendente
+                    : OrdenScaneados.descendente;
+                context.read<SettingsProvider>().setOrdenScaneados(nuevos);
+              },
             ),
-            tooltip: orden == OrdenScaneados.descendente 
-                ? 'Más recientes abajo' 
-                : 'Más recientes arriba',
-            onPressed: () {
-              final nuevos = orden == OrdenScaneados.descendente
-                  ? OrdenScaneados.ascendente
-                  : OrdenScaneados.descendente;
-              context.read<SettingsProvider>().setOrdenScaneados(nuevos);
-            },
           ),
         ],
       ),

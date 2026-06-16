@@ -39,9 +39,12 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final filtro = settings.filtro;
 
     return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.menu),
-        onPressed: onMenuPressed,
+      leading: Semantics(
+        label: 'Abrir menú lateral',
+        child: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: onMenuPressed,
+        ),
       ),
       title: Column(
         mainAxisSize: MainAxisSize.min,
@@ -68,15 +71,21 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             },
           ),
         if (showActions) ...[
-          IconButton(
-            icon: const Icon(Icons.restaurant),
-            tooltip: 'Cambiar evento',
-            onPressed: () => EventoSelectorDialog.show(context),
+          Semantics(
+            label: 'Cambiar evento',
+            child: IconButton(
+              icon: const Icon(Icons.restaurant),
+              tooltip: 'Cambiar evento',
+              onPressed: () => EventoSelectorDialog.show(context),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filtrar',
-            onPressed: () => _showFiltroDialog(context, filtro),
+          Semantics(
+            label: 'Filtrar escaneos',
+            child: IconButton(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'Filtrar',
+              onPressed: () => _showFiltroDialog(context, filtro),
+            ),
           ),
         ],
       ],

@@ -136,10 +136,11 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyScanFeedback = 'scan_feedback';
   static const _keyCsvUrl = 'csv_url';
   static const _keyOrdenScaneados = 'orden_scaneados';
+  static const String _defaultCsvUrl = '';
 
   bool _isDarkTheme = false;
   ScanFeedback _scanFeedback = ScanFeedback.none;
-  String _csvUrl = '';
+  String _csvUrl = _defaultCsvUrl;
   FiltroData _filtro = FiltroData(fecha: DateTime.now());
   OrdenScaneados _ordenScaneados = OrdenScaneados.descendente;
   final AudioPlayer _audioPlayer = AudioPlayer();

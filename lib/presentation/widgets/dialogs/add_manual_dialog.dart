@@ -22,31 +22,40 @@ class AddManualDialog extends StatelessWidget {
       content: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom > 0 ? 8 : 0),
-          child: TextField(
-            controller: controller,
-            style: const TextStyle(fontSize: 18),
-            decoration: const InputDecoration(
-              hintText: 'Ingresa el número de solapín',
-              hintStyle: TextStyle(fontSize: 16),
-              border: OutlineInputBorder(),
+          child: Semantics(
+            label: 'Ingresa el número de solapín',
+            child: TextField(
+              controller: controller,
+              style: const TextStyle(fontSize: 18),
+              decoration: const InputDecoration(
+                hintText: 'Ingresa el número de solapín',
+                hintStyle: TextStyle(fontSize: 16),
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.characters,
+              autofocus: true,
+              onSubmitted: (_) => _submit(context, controller.text),
             ),
-            textCapitalization: TextCapitalization.characters,
-            autofocus: true,
-            onSubmitted: (_) => _submit(context, controller.text),
           ),
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
-        ),
-        TextButton(
-          onPressed: () => _submit(context, controller.text),
-          style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.primary,
+        Semantics(
+          label: 'Cancelar ingreso manual',
+          child: TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
           ),
-          child: const Text('Agregar', style: TextStyle(fontSize: 16)),
+        ),
+        Semantics(
+          label: 'Agregar código manualmente',
+          child: TextButton(
+            onPressed: () => _submit(context, controller.text),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.primary,
+            ),
+            child: const Text('Agregar', style: TextStyle(fontSize: 16)),
+          ),
         ),
       ],
     );
