@@ -2,23 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/evento_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/csv_provider.dart';
 import 'dialogs/filtro_dialog.dart';
 import 'dialogs/evento_selector_dialog.dart';
-import 'common/connection_indicator.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
   final bool showActions;
-  final bool showConnection;
-  final VoidCallback? onCheckConnection;
 
   const HomeAppBar({
     super.key,
     required this.onMenuPressed,
     this.showActions = true,
-    this.showConnection = false,
-    this.onCheckConnection,
   });
 
   @override
@@ -59,17 +53,6 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       centerTitle: true,
       actions: [
-        if (showConnection)
-          Consumer<CsvProvider>(
-            builder: (context, csvProvider, _) {
-              return ConnectionIndicator(
-                isConnected: csvProvider.isConnected,
-                isLoading: csvProvider.isLoading,
-                lastCheck: csvProvider.lastConnectionCheck,
-                onTap: onCheckConnection ?? () {},
-              );
-            },
-          ),
         if (showActions) ...[
           Semantics(
             label: 'Cambiar evento',

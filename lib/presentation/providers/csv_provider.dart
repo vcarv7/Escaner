@@ -21,9 +21,9 @@ class CsvProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> checkConnection(String url) async {
+  Future<bool> checkConnection() async {
     try {
-      final isConnected = await CsvService.checkUrl(url);
+      final isConnected = await CsvService.checkUrl();
       _isConnected = isConnected;
       _lastConnectionCheck = DateTime.now();
       notifyListeners();
@@ -36,13 +36,13 @@ class CsvProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> actualizarLista(String url) async {
+  Future<bool> actualizarLista() async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final personas = await CsvService.downloadAndParse(url);
+      final personas = await CsvService.downloadAndParse();
       if (personas.isNotEmpty) {
         _personas = personas;
         await CsvService.saveToCache(personas);

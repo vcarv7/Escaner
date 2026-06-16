@@ -2,23 +2,24 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../../domain/entities/persona.dart';
 
 class CsvService {
   static const String _cacheFileName = 'personas_cache.json';
 
-  static Future<bool> checkUrl(String url) async {
+  static Future<bool> checkUrl() async {
     try {
-      final response = await http.head(Uri.parse(url));
+      final response = await http.head(Uri.parse(AppConstants.csvUrl));
       return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  static Future<List<Persona>> downloadAndParse(String url) async {
+  static Future<List<Persona>> downloadAndParse() async {
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(AppConstants.csvUrl));
       if (response.statusCode != 200) {
         return [];
       }

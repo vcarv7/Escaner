@@ -4,4 +4,5 @@ class AppConstants {
   static const int maxCodeLength = 15;
   static const int pageSize = 50;
   static const Duration scanCooldown = Duration(milliseconds: 2800);
+  static const String csvUrl = ''; // PONER URL DESCARGA AQUI
 }

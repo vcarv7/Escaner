@@ -75,7 +75,7 @@ class SettingsPage extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
             ),
             const SizedBox(height: 14),
-            _UpdateButton(settings: settings, csvProvider: csvProvider),
+            _UpdateButton(csvProvider: csvProvider),
             const SizedBox(height: 10),
             Text(
               '${csvProvider.personas.length} personas cargadas',
@@ -217,10 +217,9 @@ class SettingsPage extends StatelessWidget {
 }
 
 class _UpdateButton extends StatelessWidget {
-  final SettingsProvider settings;
   final CsvProvider csvProvider;
 
-  const _UpdateButton({required this.settings, required this.csvProvider});
+  const _UpdateButton({required this.csvProvider});
 
   @override
   Widget build(BuildContext context) {
@@ -230,7 +229,7 @@ class _UpdateButton extends StatelessWidget {
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: csvProvider.isLoading ? null : () async {
-              final success = await csvProvider.actualizarLista(settings.csvUrl);
+              final success = await csvProvider.actualizarLista();
               if (!ctx.mounted) return;
               if (success) {
                 OverlayMessage.success(ctx, 'Lista actualizada (${csvProvider.personas.length} personas)');
