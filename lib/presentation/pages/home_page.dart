@@ -129,25 +129,6 @@ class _HomePageState extends State<HomePage> {
 
   void _showAddManualDialog() => AddManualDialog.show(context, _addItemManually);
 
-  Future<void> _checkConnection(BuildContext context) async {
-    final settings = context.read<SettingsProvider>();
-    final csvProvider = context.read<CsvProvider>();
-
-    if (settings.csvUrl.isEmpty) {
-      OverlayMessage.error(context, 'Ingresa una URL primero');
-      return;
-    }
-
-    final isConnected = await csvProvider.checkConnection(settings.csvUrl);
-    if (!context.mounted) return;
-
-    if (isConnected) {
-      OverlayMessage.success(context, 'Conexión exitosa');
-    } else {
-      OverlayMessage.error(context, 'Sin conexión');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
@@ -175,8 +156,6 @@ class _HomePageState extends State<HomePage> {
               appBar: HomeAppBar(
                 onMenuPressed: () => _scaffoldKey.currentState?.openDrawer(),
                 showActions: _selectedIndex == 0,
-                showConnection: _selectedIndex == 1,
-                onCheckConnection: _selectedIndex == 1 ? () => _checkConnection(context) : null,
               ),
               drawer: const AppDrawer(),
               body: AnimatedSwitcher(

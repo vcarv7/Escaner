@@ -2,28 +2,52 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../../domain/entities/persona.dart';
 
 class CsvService {
   static const String _cacheFileName = 'personas_cache.json';
 
-  static Future<bool> checkUrl(String url) async {
+  static Map<String, String> get _headers {
+    if (AppConstants.gitlabToken.isNotEmpty) {
+      return {'PRIVATE-TOKEN': AppConstants.gitlabToken};
+    }
+    return {};
+  }
+
+  static Future<bool> checkUrl() async {
     try {
-      final response = await http.head(Uri.parse(url));
+      final response = await http.head(
+        Uri.parse(AppConstants.csvUrl),
+        headers: _headers,
+      );
       return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  static Future<List<Persona>> downloadAndParse(String url) async {
+  static Future<List<Persona>> downloadAndParse() async {
     try {
-      final response = await http.get(Uri.parse(url));
+      print('=== CSV DEBUG ===');
+      print('Token: ${AppConstants.gitlabToken.isEmpty ? "VACÍO" : "SET"}');
+      print('URL: ${AppConstants.csvUrl}');
+      
+      final response = await http.get(
+        Uri.parse(AppConstants.csvUrl),
+        headers: _headers,
+      );
+      
+      print('Status: ${response.statusCode}');
+      print('Body preview: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
+      print('=================');
+      
       if (response.statusCode != 200) {
         return [];
       }
       return _parseCsv(response.body);
     } catch (e) {
+      print('Exception: $e');
       return [];
     }
   }
