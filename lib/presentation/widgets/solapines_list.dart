@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../data/services/filter_service.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 import '../providers/settings_provider.dart';
@@ -74,16 +75,7 @@ class _SolapinesListState extends State<SolapinesList> {
     );
   }
 
-  List<ScanItem> _filtrarItems(List<ScanItem> items, FiltroData filtro) {
-    return items.where((item) {
-      final fechaValida = filtro.fechaEnRango(item.scannedAt);
-      final mismoEvento = filtro.evento == null || 
-          (item.evento != null && item.evento!.displayName == filtro.eventoNombre);
-      return fechaValida && mismoEvento;
-    }).toList();
-  }
-
-@override
+  @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
     final filtro = settings.filtro;
@@ -92,7 +84,7 @@ class _SolapinesListState extends State<SolapinesList> {
     return Consumer<ScanProvider>(
       builder: (context, provider, _) {
         final allItems = provider.items;
-        final itemsFiltrados = _filtrarItems(allItems, filtro);
+        final itemsFiltrados = FilterService.aplicarFiltros(allItems, filtro);
         
         final sortedItems = _ordenarItems(itemsFiltrados, orden);
         

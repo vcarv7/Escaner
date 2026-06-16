@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:escaner_1/data/services/excel_service.dart';
+import 'package:escaner_1/data/services/filter_service.dart';
 import 'package:escaner_1/presentation/providers/scan_provider.dart';
+import 'package:escaner_1/presentation/providers/settings_provider.dart';
 import 'package:escaner_1/presentation/widgets/overlay/overlay_message.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_constants.dart';
 import 'package:escaner_1/presentation/widgets/drawer/drawer_menu_item.dart';
@@ -39,22 +41,21 @@ class _AppDrawerState extends State<AppDrawer>
   Future<void> _exportToExcel() async {
     if (!mounted) return;
     final scanProvider = context.read<ScanProvider>();
-    final items = scanProvider.items;
+    final settings = context.read<SettingsProvider>();
+    final filtro = settings.filtro;
+    final itemsFiltrados = FilterService.aplicarFiltros(scanProvider.items, filtro);
 
-    if (items.isEmpty) {
+    if (itemsFiltrados.isEmpty) {
       if (!mounted) return;
-      OverlayMessage.warning(context, 'No hay códigos para exportar');
+      OverlayMessage.warning(context, 'No hay Solapines para exportar');
       return;
     }
 
-    final filePath = await ExcelService.exportToExcel(items);
+    final filePath = await ExcelService.exportToExcel(itemsFiltrados);
 
     if (!mounted) return;
     if (filePath != null) {
-      await Share.shareXFiles([XFile(filePath)], text: 'Códigos exportados');
-      if (mounted) {
-        OverlayMessage.success(context, 'Exportación completada');
-      }
+      await Share.shareXFiles([XFile(filePath)], text: 'Solapines exportados');
     } else {
       OverlayMessage.error(context, 'Error al exportar');
     }
@@ -91,11 +92,11 @@ class _AppDrawerState extends State<AppDrawer>
     return Column(
       children: [
         Semantics(
-          label: 'Exportar códigos a Excel',
+          label: 'Exportar Solapines a Excel',
           child: DrawerMenuItem(
             icon: Icons.file_download_outlined,
             title: 'Exportar Excel',
-            subtitle: 'Guardar códigos en archivo',
+            subtitle: 'Guardar Solapines en archivo',
             onTap: _exportToExcel,
           ),
         ),
