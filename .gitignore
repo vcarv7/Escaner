@@ -39,9 +39,6 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# FVM
-.fvm/
-
 # Agent/Skills
 .agents/
 skills-lock.json
