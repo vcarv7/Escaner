@@ -78,7 +78,7 @@ class _HomePageState extends State<HomePage> {
     final csvProvider = context.read<CsvProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
-      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
+      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
       return;
     }
     final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, csvProvider.personas);
@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Código no encontrado en lista');
+        OverlayMessage.warning(context, 'Solapín no encontrado en lista');
       }
     } else {
       if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
     final csvProvider = context.read<CsvProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
-      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Código inválido');
+      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
       return;
     }
     final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, csvProvider.personas);
@@ -116,7 +116,7 @@ class _HomePageState extends State<HomePage> {
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
       } else {
-        OverlayMessage.warning(context, 'Código no encontrado en lista');
+        OverlayMessage.warning(context, 'Solapín no encontrado en lista');
       }
     } else {
       if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
@@ -226,7 +226,7 @@ class _HomePageState extends State<HomePage> {
               ),
               floatingActionButton: _selectedIndex == 0
                   ? Semantics(
-                      label: 'Agregar código manualmente',
+                      label: 'Agregar Solapín manualmente',
                       child: FloatingActionButton(
                         key: const ValueKey('fab_add'),
                         onPressed: _showAddManualDialog,

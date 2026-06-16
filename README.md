@@ -1,10 +1,10 @@
 # Escáner de Solapines
 
-Aplicación móvil Flutter para el escaneo de códigos de barras y códigos QR, diseñada específicamente para la gestión de identificadores de solapines.
+Aplicación móvil Flutter para el escaneo de Solapines (códigos de barras y QR), diseñada específicamente para la gestión de identificadores de solapines.
 
 ## Características
 
-- Escaneo de códigos de barras y QR en tiempo real
+- Escaneo de Solapines en tiempo real
 - Gestión de datos mediante archivos CSV
 - Almacenamiento seguro de información
 - Exportación y compartición de resultados
@@ -16,7 +16,7 @@ Aplicación móvil Flutter para el escaneo de códigos de barras y códigos QR, 
 |------------|-----------|
 | Flutter 3.x | Framework UI multiplataforma |
 | Provider | Gestión de estado |
-| mobile_scanner | Escaneo de códigos de barras/QR |
+| mobile_scanner | Escaneo de Solapines |
 | excel_community | Manipulación de archivos Excel/CSV |
 | flutter_secure_storage | Almacenamiento cifrado |
 | audioplayers | Reproducción de sonidos |
@@ -109,7 +109,7 @@ Agregar en `android/app/src/main/AndroidManifest.xml`:
 Agregar en `ios/Runner/Info.plist`:
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Se requiere acceso a la cámara para escanear códigos</string>
+<string>Se requiere acceso a la cámara para escanear Solapines</string>
 ```
 
 ## Contribución

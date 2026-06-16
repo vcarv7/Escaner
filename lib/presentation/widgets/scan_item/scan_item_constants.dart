@@ -48,7 +48,7 @@ class ScanItemConstants {
     final solapinText = solapineCount == 1 ? solapineName : solapinesPlural;
     final tarjetaText = tarjetaCount == 1 ? tarjetaName : tarjetasPlural;
 
-    if (solapineCount == 0 && tarjetaCount == 0) return 'Sin códigos';
+    if (solapineCount == 0 && tarjetaCount == 0) return 'Sin Solapines';
     if (solapineCount == 0) return '$tarjetaCount $tarjetaText';
     if (tarjetaCount == 0) return '$solapineCount $solapinText';
     return '$solapineCount $solapinText y $tarjetaCount $tarjetaText';

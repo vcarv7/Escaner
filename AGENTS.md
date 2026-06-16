@@ -1,6 +1,6 @@
 # Escáner App
 
-Aplicación móvil Flutter para escaneo de códigos de barras y QR.
+Aplicación móvil Flutter para escaneo de Solapines (barras y QR).
 
 ## Stack Tecnológico
 
@@ -8,7 +8,7 @@ Aplicación móvil Flutter para escaneo de códigos de barras y QR.
 |------------|-----------|
 | Flutter 3.x | Framework UI |
 | Provider | Gestión de estado |
-| mobile_scanner | Escaneo de códigos |
+| mobile_scanner | Escaneo de Solapines |
 
 ## Estructura del Proyecto
 

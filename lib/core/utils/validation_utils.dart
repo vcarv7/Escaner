@@ -29,10 +29,10 @@ class ValidationUtils {
 
   static String? validateCode(String code) {
     if (code.isEmpty) {
-      return 'El código no puede estar vacío';
+      return 'El Solapin no puede estar vacío';
     }
     if (code.length < minLength || code.length > maxLength) {
-      return 'El código debe tener entre $minLength y $maxLength caracteres';
+      return 'El Solapin debe tener entre $minLength y $maxLength caracteres';
     }
     return null;
   }

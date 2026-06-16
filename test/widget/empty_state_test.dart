@@ -47,13 +47,13 @@ void main() {
             body: EmptyState(
               icon: Icons.inbox,
               title: 'Title',
-              subtitle: 'Escanea algunos códigos',
+              subtitle: 'Escanea algunos Solapines',
             ),
           ),
         ),
       );
 
-      expect(find.text('Escanea algunos códigos'), findsOneWidget);
+      expect(find.text('Escanea algunos Solapines'), findsOneWidget);
     });
 
     testWidgets('applies custom icon color', (WidgetTester tester) async {

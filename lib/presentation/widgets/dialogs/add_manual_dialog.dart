@@ -18,7 +18,7 @@ class AddManualDialog extends StatelessWidget {
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     return AlertDialog(
-      title: const Text('Agregar código manualmente', style: TextStyle(fontSize: 20)),
+      title: const Text('Agregar Solapín manualmente', style: TextStyle(fontSize: 20)),
       content: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(bottom: viewInsets.bottom > 0 ? 8 : 0),
@@ -48,7 +48,7 @@ class AddManualDialog extends StatelessWidget {
           ),
         ),
         Semantics(
-          label: 'Agregar código manualmente',
+          label: 'Agregar Solapín manualmente',
           child: TextButton(
             onPressed: () => _submit(context, controller.text),
             style: TextButton.styleFrom(

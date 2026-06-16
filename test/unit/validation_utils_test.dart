@@ -110,15 +110,15 @@ void main() {
       });
 
       test('returns error message for empty string', () {
-        expect(ValidationUtils.validateCode(''), equals('El código no puede estar vacío'));
+        expect(ValidationUtils.validateCode(''), equals('El Solapin no puede estar vacío'));
       });
 
       test('returns error message for short code', () {
-        expect(ValidationUtils.validateCode('AB'), equals('El código debe tener entre 5 y 15 caracteres'));
+        expect(ValidationUtils.validateCode('AB'), equals('El Solapin debe tener entre 5 y 15 caracteres'));
       });
 
       test('returns error message for long code', () {
-        expect(ValidationUtils.validateCode('ABC1234567890123'), equals('El código debe tener entre 5 y 15 caracteres'));
+        expect(ValidationUtils.validateCode('ABC1234567890123'), equals('El Solapin debe tener entre 5 y 15 caracteres'));
       });
 
       test('returns null for valid tarjeta code', () {
