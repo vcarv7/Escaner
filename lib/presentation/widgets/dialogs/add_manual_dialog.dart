@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AddManualDialog extends StatelessWidget {
+class AddManualDialog extends StatefulWidget {
   final void Function(String) onAdd;
 
   const AddManualDialog({super.key, required this.onAdd});
@@ -13,8 +13,30 @@ class AddManualDialog extends StatelessWidget {
   }
 
   @override
+  State<AddManualDialog> createState() => _AddManualDialogState();
+}
+
+class _AddManualDialogState extends State<AddManualDialog> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final text = _controller.text.trim();
+    Navigator.of(context).pop();
+    if (text.isNotEmpty) {
+      widget.onAdd(text);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController();
     final viewInsets = MediaQuery.of(context).viewInsets;
 
     return AlertDialog(
@@ -25,7 +47,8 @@ class AddManualDialog extends StatelessWidget {
           child: Semantics(
             label: 'Ingresa el número de solapín',
             child: TextField(
-              controller: controller,
+              controller: _controller,
+              focusNode: _focusNode,
               style: const TextStyle(fontSize: 18),
               decoration: const InputDecoration(
                 hintText: 'Ingresa el número de solapín',
@@ -33,8 +56,10 @@ class AddManualDialog extends StatelessWidget {
                 border: OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.characters,
+              keyboardType: TextInputType.visiblePassword,
               autofocus: true,
-              onSubmitted: (_) => _submit(context, controller.text),
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
             ),
           ),
         ),
@@ -50,7 +75,7 @@ class AddManualDialog extends StatelessWidget {
         Semantics(
           label: 'Agregar Solapín manualmente',
           child: TextButton(
-            onPressed: () => _submit(context, controller.text),
+            onPressed: _submit,
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.primary,
             ),
@@ -59,12 +84,5 @@ class AddManualDialog extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  void _submit(BuildContext context, String text) {
-    Navigator.of(context).pop();
-    if (text.trim().isNotEmpty) {
-      onAdd(text.trim());
-    }
   }
 }

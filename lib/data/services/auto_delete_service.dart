@@ -1,14 +1,17 @@
 import 'dart:async';
 import '../../domain/entities/scan_item.dart';
-import 'storage_service.dart';
 
 class AutoDeleteNotification {
   final int itemsMovidosAPapelera;
   final int itemsEliminados;
+  final List<ScanItem> itemsRestantes;
+  final List<ScanItem> trashActualizada;
 
   const AutoDeleteNotification({
     required this.itemsMovidosAPapelera,
     required this.itemsEliminados,
+    required this.itemsRestantes,
+    required this.trashActualizada,
   });
 }
 
@@ -16,6 +19,7 @@ class AutoDeleteService {
   static const int _diasHastaPapelera = 15;
   static const int _diasHastaEliminar = 30;
   static Timer? _timer;
+  static bool _iniciado = false;
 
   static final StreamController<AutoDeleteNotification> _notificationController =
       StreamController<AutoDeleteNotification>.broadcast();
@@ -24,60 +28,61 @@ class AutoDeleteService {
       _notificationController.stream;
 
   static void iniciar() {
-    _revisarEliminacion();
-    _timer = Timer.periodic(const Duration(hours: 1), (_) => _revisarEliminacion());
+    if (_iniciado) return;
+    _iniciado = true;
+    _timer = Timer.periodic(const Duration(hours: 1), (_) {
+      // El provider escucha este stream y aplica _revisar sobre sus listas
+      // en memoria. Aquí no se toca storage directamente.
+    });
   }
 
   static void detener() {
     _timer?.cancel();
     _timer = null;
+    _iniciado = false;
   }
 
-  static Future<void> _revisarEliminacion() async {
-    final items = await StorageService.loadItems();
-    final trashItems = await StorageService.loadTrash();
+  /// Revisa items y trash (pertenecientes al ScanProvider) y devuelve el
+  /// resultado de la limpieza. NO toca storage directamente: el provider
+  /// debe aplicar el resultado y persistir.
+  static AutoDeleteNotification revisar(
+    List<ScanItem> items,
+    List<ScanItem> trashItems,
+  ) {
     final ahora = DateTime.now();
 
-    final List<ScanItem> itemsAMover = [];
-    final List<ScanItem> itemsAEliminar = [];
     final List<ScanItem> itemsRestantes = [];
+    final List<ScanItem> trashActualizada = List<ScanItem>.from(trashItems);
+    int itemsMovidos = 0;
+    int itemsEliminados = 0;
 
     for (final item in items) {
       final dias = ahora.difference(item.scannedAt).inDays;
       if (dias >= _diasHastaPapelera) {
-        itemsAMover.add(item);
+        // Evitar dup en trash (por code, case-insensitive).
+        final yaEnTrash = trashActualizada.any(
+          (t) => t.code.toUpperCase() == item.code.toUpperCase(),
+        );
+        if (!yaEnTrash) {
+          trashActualizada.add(item);
+          itemsMovidos++;
+        }
       } else {
         itemsRestantes.add(item);
       }
     }
 
-    for (final item in trashItems) {
-      final dias = ahora.difference(item.scannedAt).inDays;
-      if (dias >= _diasHastaEliminar) {
-        itemsAEliminar.add(item);
-      }
-    }
+    final int antes = trashActualizada.length;
+    trashActualizada.removeWhere(
+      (t) => ahora.difference(t.scannedAt).inDays >= _diasHastaEliminar,
+    );
+    itemsEliminados = antes - trashActualizada.length;
 
-    if (itemsAMover.isNotEmpty) {
-      for (final item in itemsAMover) {
-        trashItems.add(item);
-      }
-      itemsRestantes.removeWhere((i) => itemsAMover.contains(i));
-    }
-
-    if (itemsAEliminar.isNotEmpty) {
-      for (final item in itemsAEliminar) {
-        trashItems.removeWhere((t) => t.code == item.code);
-      }
-    }
-
-    if (itemsAMover.isNotEmpty || itemsAEliminar.isNotEmpty) {
-      await StorageService.saveItems(itemsRestantes);
-      await StorageService.saveTrash(trashItems);
-      _notificationController.add(AutoDeleteNotification(
-        itemsMovidosAPapelera: itemsAMover.length,
-        itemsEliminados: itemsAEliminar.length,
-      ));
-    }
+    return AutoDeleteNotification(
+      itemsMovidosAPapelera: itemsMovidos,
+      itemsEliminados: itemsEliminados,
+      itemsRestantes: itemsRestantes,
+      trashActualizada: trashActualizada,
+    );
   }
 }

@@ -7,7 +7,6 @@ import '../providers/settings_provider.dart';
 import 'scan_item/scan_item_constants.dart';
 import 'scan_item/scan_item_card.dart';
 import 'common/empty_state.dart';
-import 'common/math_curve_loader.dart';
 
 class SolapinesList extends StatefulWidget {
   final ScanProvider provider;
@@ -23,7 +22,6 @@ class SolapinesList extends StatefulWidget {
 
 class _SolapinesListState extends State<SolapinesList> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
   bool _showScrollTopButton = false;
 
   @override
@@ -39,32 +37,12 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   void _onScroll() {
-    final position = _scrollController.position;
-    
-    if (position.pixels >= position.maxScrollExtent - 200) {
-      if (!_isLoadingMore && widget.provider.hasMoreData) {
-        _loadNextPage();
-      }
-    }
-
     final hasEnoughItems = widget.provider.items.length > 5;
     final shouldShowButton = hasEnoughItems && _scrollController.offset > 500;
-    
+
     if (_showScrollTopButton != shouldShowButton) {
       setState(() => _showScrollTopButton = shouldShowButton);
     }
-  }
-
-  void _loadNextPage() {
-    setState(() => _isLoadingMore = true);
-    final nextPage = widget.provider.currentPage + 1;
-    final newItems = widget.provider.getItemsPage(nextPage);
-    if (newItems.isEmpty) {
-      setState(() => _isLoadingMore = false);
-      return;
-    }
-    widget.provider.resetPagination();
-    setState(() => _isLoadingMore = false);
   }
 
   void _scrollToTop() {
@@ -188,7 +166,12 @@ class _SolapinesListState extends State<SolapinesList> {
               ),
               onDeleted: () {
                 context.read<SettingsProvider>().setFiltro(
-                  FiltroData(fecha: DateTime.now()),
+                  filtro.copyWith(
+                    tipoRango: TipoRangoFecha.unico,
+                    fecha: DateTime.now(),
+                    fechaInicio: null,
+                    fechaFin: null,
+                  ),
                 );
               },
             ),
@@ -222,26 +205,9 @@ class _SolapinesListState extends State<SolapinesList> {
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: items.length + (_isLoadingMore ? 1 : 0),
+      itemCount: items.length,
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      itemBuilder: (context, index) {
-        if (index >= items.length) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: MathCurveLoader.epicycloid(
-                size: 60,
-                color: Theme.of(context).colorScheme.primary,
-                duration: const Duration(milliseconds: 1500),
-                particleCount: 50,
-                trailSpan: 0.4,
-                strokeWidth: 4,
-              ),
-            ),
-          );
-        }
-        return ScanItemCard(item: items[index]);
-      },
+      itemBuilder: (context, index) => ScanItemCard(item: items[index]),
     );
   }
 }

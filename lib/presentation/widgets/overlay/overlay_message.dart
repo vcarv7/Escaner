@@ -67,6 +67,13 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  bool _dismissed = false;
+
+  void _dismiss() {
+    if (_dismissed) return;
+    _dismissed = true;
+    widget.onDismiss();
+  }
 
   @override
   void initState() {
@@ -87,13 +94,16 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
 
     Future.delayed(widget.duration, () {
       if (mounted) {
-        _controller.reverse().then((_) => widget.onDismiss());
+        _controller.reverse().then((_) => _dismiss());
       }
     });
   }
 
   @override
   void dispose() {
+    // Garantiza que el OverlayEntry siempre se quite, incluso si la ruta
+    // se cierra antes de que el Future.delayed dispare la animación de salida.
+    _dismiss();
     _controller.dispose();
     super.dispose();
   }

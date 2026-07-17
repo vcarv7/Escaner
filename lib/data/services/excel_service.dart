@@ -11,7 +11,9 @@ Uint8List? _generateExcelBytesSync(List<ScanItem> items) {
 
   try {
     final excel = Excel.createExcel();
-    final sheet = excel.tables['Sheet1'];
+    // Tomar la primera hoja disponible en vez de asumir el nombre 'Sheet1',
+    // que puede variar según la versión/configuración de excel_community.
+    final sheet = excel.tables.values.firstOrNull;
 
     if (sheet == null) {
       return null;
@@ -33,7 +35,7 @@ Uint8List? _generateExcelBytesSync(List<ScanItem> items) {
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(item.personaSolapine ?? '');
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(item.evento?.displayName ?? '');
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(item.type == ScanType.solapine ? 'solapine' : 'tarjeta');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(DateUtils.formatDate(item.scannedAt));
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(DateUtils.formatDate(item.scannedAt.toLocal()));
     }
 
     final encoded = excel.encode();

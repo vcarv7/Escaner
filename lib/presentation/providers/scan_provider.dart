@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/auto_delete_service.dart';
@@ -5,36 +6,56 @@ import '../../domain/entities/scan_item.dart';
 import '../../domain/entities/evento.dart';
 import '../../domain/entities/persona.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/utils/validation_utils.dart';
 
 class ScanProvider extends ChangeNotifier {
-  late List<ScanItem> _items;
-  late List<ScanItem> _trashItems;
+  List<ScanItem> _items = [];
+  List<ScanItem> _trashItems = [];
   bool _isLoading = true;
-  int _currentPage = 1;
-  bool _hasMoreData = true;
+  bool _initialized = false;
 
-  List<ScanItem> get items => _items;
-  List<ScanItem> get trashItems => _trashItems;
+  Timer? _autoDeleteTimer;
+  final StreamController<AutoDeleteNotification> _notifController =
+      StreamController<AutoDeleteNotification>.broadcast();
+
+  List<ScanItem> get items => List.unmodifiable(_items);
+  List<ScanItem> get trashItems => List.unmodifiable(_trashItems);
   bool get isLoading => _isLoading;
-  bool get hasMoreData => _hasMoreData;
-  int get currentPage => _currentPage;
 
   Stream<AutoDeleteNotification> get autoDeleteNotifications =>
-      AutoDeleteService.notifications;
+      _notifController.stream;
+
+  @override
+  void dispose() {
+    _autoDeleteTimer?.cancel();
+    AutoDeleteService.detener();
+    _notifController.close();
+    super.dispose();
+  }
 
   Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
     _items = await StorageService.loadItems();
     _trashItems = await StorageService.loadTrash();
     _isLoading = false;
     AutoDeleteService.iniciar();
+    _applyAutoDelete();
+    _autoDeleteTimer =
+        Timer.periodic(const Duration(hours: 1), (_) => _applyAutoDelete());
     notifyListeners();
   }
 
-  List<ScanItem> getItemsPage(int page) {
-    final start = (page - 1) * AppConstants.pageSize;
-    final end = start + AppConstants.pageSize;
-    if (start >= _items.length) return [];
-    return _items.sublist(start, end.clamp(0, _items.length));
+  void _applyAutoDelete() {
+    final notif = AutoDeleteService.revisar(_items, _trashItems);
+    if (notif.itemsMovidosAPapelera > 0 || notif.itemsEliminados > 0) {
+      _items = notif.itemsRestantes;
+      _trashItems = notif.trashActualizada;
+      _saveItems();
+      _saveTrash();
+      _notifController.add(notif);
+      notifyListeners();
+    }
   }
 
   bool addItem(String code, Evento evento, List<Persona> personas) {
@@ -71,7 +92,7 @@ class ScanProvider extends ChangeNotifier {
 
     _items.add(ScanItem(
       code: codeNormalized,
-      type: ScanType.solapine,
+      type: ValidationUtils.detectType(codeNormalized),
       isDuplicate: false,
       scannedAt: DateTime.now(),
       evento: evento,
@@ -79,7 +100,6 @@ class ScanProvider extends ChangeNotifier {
       personaNombre: persona?.nombreCompleto,
       status: status,
     ));
-    _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
     _saveItems();
     notifyListeners();
     return true;
@@ -115,7 +135,7 @@ class ScanProvider extends ChangeNotifier {
 
     _items.add(ScanItem(
       code: codeNormalized,
-      type: ScanType.solapine,
+      type: ValidationUtils.detectType(codeNormalized),
       isDuplicate: false,
       scannedAt: DateTime.now(),
       evento: evento,
@@ -123,7 +143,6 @@ class ScanProvider extends ChangeNotifier {
       personaNombre: persona?.nombreCompleto,
       status: status,
     ));
-    _hasMoreData = _currentPage * AppConstants.pageSize < _items.length;
     _saveItems();
     notifyListeners();
     return true;
@@ -165,7 +184,12 @@ class ScanProvider extends ChangeNotifier {
 
   void restoreItem(ScanItem item) {
     _trashItems.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
-    _items.add(item);
+    final existingIdx = _items.indexWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
+    if (existingIdx != -1) {
+      _items[existingIdx] = item;
+    } else {
+      _items.add(item);
+    }
     _saveItems();
     _saveTrash();
     notifyListeners();
@@ -179,13 +203,16 @@ class ScanProvider extends ChangeNotifier {
 
   void restoreAll() {
     for (final item in List.from(_trashItems)) {
-      restoreItem(item);
+      _trashItems.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
+      final existingIdx = _items.indexWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
+      if (existingIdx != -1) {
+        _items[existingIdx] = item;
+      } else {
+        _items.add(item);
+      }
     }
-  }
-
-  void resetPagination() {
-    _currentPage = 1;
-    _hasMoreData = true;
+    _saveItems();
+    _saveTrash();
     notifyListeners();
   }
 

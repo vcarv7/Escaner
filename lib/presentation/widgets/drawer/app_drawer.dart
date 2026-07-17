@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:escaner_1/core/utils/date_utils.dart' as app_date;
 import 'package:escaner_1/data/services/excel_service.dart';
 import 'package:escaner_1/data/services/filter_service.dart';
@@ -65,18 +65,18 @@ class _AppDrawerState extends State<AppDrawer>
       return;
     }
 
-    final outputFile = await FilePicker.platform.saveFile(
-      dialogTitle: 'Guardar Solapines',
-      fileName: 'solapines_${app_date.DateUtils.getDateFileName()}.xlsx',
-    );
+    // Guardar en un directorio escribible por la app (no content:// de SAF),
+    // y luego compartir con share_plus (Android 11+ no acepta File sobre
+    // URIs devueltas por FilePicker.saveFile).
+    final dir = await getApplicationDocumentsDirectory();
+    final fileName = 'solapines_${app_date.DateUtils.getDateFileName()}.xlsx';
+    final filePath = '${dir.path}/$fileName';
 
-    if (outputFile == null) return;
-
-    final success = await ExcelService.saveExcel(bytes, outputFile);
+    final success = await ExcelService.saveExcel(bytes, filePath);
 
     if (!mounted) return;
     if (success) {
-      await Share.shareXFiles([XFile(outputFile)], text: 'Solapines exportados');
+      await Share.shareXFiles([XFile(filePath)], text: 'Solapines exportados');
     } else {
       OverlayMessage.error(context, 'Error al guardar');
     }

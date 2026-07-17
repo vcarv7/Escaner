@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/entities/evento.dart';
 import '../../providers/settings_provider.dart';
 
 class FiltroDialog extends StatefulWidget {
@@ -24,16 +25,7 @@ class _FiltroDialogState extends State<FiltroDialog> {
   late RangoPredefinido _predefinido;
   late DateTime? _fechaInicio;
   late DateTime? _fechaFin;
-  dynamic _eventoSeleccionado;
-
-  static const List<_EventoItem> _eventos = [
-    _EventoItem('Desayuno', false),
-    _EventoItem('Desayuno', true),
-    _EventoItem('Almuerzo', false),
-    _EventoItem('Almuerzo', true),
-    _EventoItem('Comida', false),
-    _EventoItem('Comida', true),
-  ];
+  Evento? _eventoSeleccionado;
 
   @override
   void initState() {
@@ -186,17 +178,17 @@ class _FiltroDialogState extends State<FiltroDialog> {
   }
 
   Widget _buildEventoSelector() {
-    return DropdownButton<dynamic>(
+    return DropdownButton<Evento?>(
       value: _eventoSeleccionado,
       hint: const Text('Todos los eventos'),
       isExpanded: true,
       items: [
-        const DropdownMenuItem<dynamic>(
+        const DropdownMenuItem<Evento?>(
           value: null,
           child: Text('Todos los eventos'),
         ),
-        ..._eventos.map((evento) {
-          return DropdownMenuItem<dynamic>(
+        ...Evento.values.map((evento) {
+          return DropdownMenuItem<Evento?>(
             value: evento,
             child: Text(evento.displayName),
           );
@@ -245,23 +237,25 @@ class _FiltroDialogState extends State<FiltroDialog> {
   }
 
   void _aplicarFiltro() {
+    // Validar y normalizar rango personalizado.
+    DateTime? inicio = _fechaInicio;
+    DateTime? fin = _fechaFin;
+    if (_tipoRango == TipoRangoFecha.personalizado &&
+        inicio != null && fin != null && inicio.isAfter(fin)) {
+      final tmp = inicio;
+      inicio = fin;
+      fin = tmp;
+    }
     final filtro = FiltroData(
       fecha: _fechaUnica,
       tipoRango: _tipoRango,
       predefinido: _tipoRango == TipoRangoFecha.predefinido ? _predefinido : RangoPredefinido.hoy,
-      fechaInicio: _tipoRango == TipoRangoFecha.personalizado ? _fechaInicio : null,
-      fechaFin: _tipoRango == TipoRangoFecha.personalizado ? _fechaFin : null,
+      fechaInicio: _tipoRango == TipoRangoFecha.personalizado ? inicio : null,
+      fechaFin: _tipoRango == TipoRangoFecha.personalizado ? fin : null,
       evento: _eventoSeleccionado,
     );
     final settings = context.read<SettingsProvider>();
     settings.setFiltro(filtro);
     Navigator.of(context).pop(filtro);
   }
-}
-
-class _EventoItem {
-  final String nombre;
-  final bool esDoble;
-  const _EventoItem(this.nombre, this.esDoble);
-  String get displayName => esDoble ? '$nombre Doble' : nombre;
 }

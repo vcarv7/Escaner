@@ -83,6 +83,7 @@ class _HomePageState extends State<HomePage> {
     }
     final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
+      context.read<SettingsProvider>().triggerScanFeedback();
       final item = provider.items.last;
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
@@ -112,6 +113,7 @@ class _HomePageState extends State<HomePage> {
     }
     final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, csvProvider.personas);
     if (isNew) {
+      context.read<SettingsProvider>().triggerScanFeedback();
       final item = provider.items.last;
       if (item.status == ScanStatus.reserved) {
         OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
@@ -131,8 +133,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    
     return LayoutBuilder(
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
@@ -186,7 +186,6 @@ class _HomePageState extends State<HomePage> {
                             ),
                             child: ScannerWidget(
                               onSolapineScanned: _onItemScanned,
-                              onScan: () => settings.triggerScanFeedback(),
                             ),
                           ),
                           Expanded(

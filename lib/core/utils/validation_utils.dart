@@ -5,12 +5,16 @@ class ValidationUtils {
   static int get minLength => AppConstants.minCodeLength;
   static int get maxLength => AppConstants.maxCodeLength;
 
+  // Solapín: longitud válida + contiene al menos un dígito (mutuamente
+  // exclusivo con tarjeta para que detectType discrimine correctamente).
   static bool isValidSolapine(String value) {
     if (value.isEmpty) return false;
     final length = value.length;
-    return length >= minLength && length <= maxLength;
+    if (length < minLength || length > maxLength) return false;
+    return RegExp(r'[0-9]').hasMatch(value);
   }
 
+  // Tarjeta: solo letras, longitud válida.
   static bool isValidTarjeta(String value) {
     if (value.length < minLength || value.length > maxLength) return false;
     return RegExp(r'^[A-Za-z]+$').hasMatch(value);

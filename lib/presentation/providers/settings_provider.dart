@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart';
+import '../../domain/entities/evento.dart';
 
 enum ScanFeedback { none, sound, vibration }
 
@@ -11,13 +12,20 @@ enum RangoPredefinido { hoy, ayer, ultimos7, ultimos30, estaSemana, esteMes }
 
 enum OrdenScaneados { ascendente, descendente }
 
+// Sentinel que permite distinguir "no pasar este argumento" de "pasar null".
+class _Sentinel {
+  const _Sentinel();
+}
+
+const _sentinel = _Sentinel();
+
 class FiltroData {
   final DateTime fecha;
   final TipoRangoFecha tipoRango;
   final RangoPredefinido predefinido;
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
-  final dynamic evento;
+  final Evento? evento;
 
   FiltroData({
     required this.fecha,
@@ -28,33 +36,33 @@ class FiltroData {
     this.evento,
   });
 
+  // El patrón sentinel permite poner evento/fechaInicio/fechaFin a null.
+  // Usar `filtro.copyWith(evento: null)` ahora SÍ anula el campo.
   FiltroData copyWith({
     DateTime? fecha,
     TipoRangoFecha? tipoRango,
     RangoPredefinido? predefinido,
-    DateTime? fechaInicio,
-    DateTime? fechaFin,
-    dynamic evento,
+    Object? fechaInicio = _sentinel,
+    Object? fechaFin = _sentinel,
+    Object? evento = _sentinel,
   }) {
     return FiltroData(
       fecha: fecha ?? this.fecha,
       tipoRango: tipoRango ?? this.tipoRango,
       predefinido: predefinido ?? this.predefinido,
-      fechaInicio: fechaInicio ?? this.fechaInicio,
-      fechaFin: fechaFin ?? this.fechaFin,
-      evento: evento ?? this.evento,
+      fechaInicio: identical(fechaInicio, _sentinel)
+          ? this.fechaInicio
+          : fechaInicio as DateTime?,
+      fechaFin: identical(fechaFin, _sentinel)
+          ? this.fechaFin
+          : fechaFin as DateTime?,
+      evento: identical(evento, _sentinel) ? this.evento : evento as Evento?,
     );
   }
 
-  String? get eventoNombre {
-    if (evento == null) return null;
-    return evento.displayName as String?;
-  }
+  String? get eventoNombre => evento?.displayName;
 
-  bool get esDoble {
-    if (evento == null) return false;
-    return evento.isDoble;
-  }
+  bool get esDoble => evento?.isDoble ?? false;
 
   TipoRangoFecha get tipoRangoEffective => tipoRango;
 
@@ -89,9 +97,9 @@ class FiltroData {
             fechaItem.month == yesterday.month &&
             fechaItem.day == yesterday.day;
       case RangoPredefinido.ultimos7:
-        return fechaItem.isAfter(today.subtract(const Duration(days: 7)));
+        return !fechaItem.isBefore(today.subtract(const Duration(days: 7)));
       case RangoPredefinido.ultimos30:
-        return fechaItem.isAfter(today.subtract(const Duration(days: 30)));
+        return !fechaItem.isBefore(today.subtract(const Duration(days: 30)));
       case RangoPredefinido.estaSemana:
         final inicioSemana = today.subtract(Duration(days: today.weekday - 1));
         return !fechaItem.isBefore(inicioSemana);

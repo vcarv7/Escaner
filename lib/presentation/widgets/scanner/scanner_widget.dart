@@ -9,13 +9,11 @@ import '../common/math_curve_loader.dart';
 
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
-  final VoidCallback? onScan;
   final bool enabled;
 
   const ScannerWidget({
     super.key,
     required this.onSolapineScanned,
-    this.onScan,
     this.enabled = true,
   });
 
@@ -47,18 +45,16 @@ class _ScannerWidgetState extends State<ScannerWidget> {
   void _handleDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
 
-    _isProcessing = true;
-    setState(() {});
-
+    // Verificar barcodes ANTES de activar _isProcessing para evitar
+    // que el escáner quede pausado permanentemente si llega una captura vacía.
     final barcodes = capture.barcodes;
     if (barcodes.isEmpty) return;
 
     final rawValue = barcodes.first.rawValue;
-    if (rawValue == null || rawValue.isEmpty) {
-      _isProcessing = false;
-      setState(() {});
-      return;
-    }
+    if (rawValue == null || rawValue.isEmpty) return;
+
+    _isProcessing = true;
+    setState(() {});
 
     final validationError = ValidationUtils.validateCode(rawValue);
     if (validationError != null) {
@@ -69,7 +65,6 @@ class _ScannerWidgetState extends State<ScannerWidget> {
     }
 
     widget.onSolapineScanned(rawValue);
-    widget.onScan?.call();
 
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer(AppConstants.scanCooldown, () {
