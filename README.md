@@ -42,8 +42,7 @@ lib/
 ├── presentation/            # Capa de presentación
 │   ├── pages/              # Pantallas
 │   ├── widgets/            # Widgets reutilizables
-│   └── providers/           # Providers de estado
-└── injection.dart          # Inyección de dependencias
+│   └── providers/          # Providers de estado
 ```
 
 ## Requisitos Previos
@@ -92,6 +91,41 @@ flutter pub get
 # Generar icons de app
 flutter pub run flutter_launcher_icons
 ```
+
+## Versionado
+
+El número de versión se define en `pubspec.yaml` con el formato `x.y.z+build`
+(por ejemplo `version: 0.8.5+1`). El sufijo `+N` es el `versionCode` que exige
+Play Store: debe incrementarse en cada release, si no el upload es rechazado.
+
+## Release (firma de producción)
+
+La app se firma con un keystore propio (no el de debug). Los secretos nunca
+se suben al repositorio: `android/key.properties` y `android/keystore/` están
+en `.gitignore`.
+
+1. Generar el keystore (requiere el JDK en el PATH):
+   ```bash
+   keytool -genkey -v -keystore android/keystore/siga-escaner-release.keystore \
+     -alias siga-escaner -keyalg RSA -keysize 2048 -validity 10000
+   ```
+2. Crear `android/key.properties` con:
+   ```properties
+   storeFile=../keystore/siga-escaner-release.keystore
+   storePassword=TU_PASSWORD
+   keyAlias=siga-escaner
+   keyPassword=TU_PASSWORD
+   ```
+3. Build de release:
+   ```bash
+   flutter build apk --release          # APK: SIGA-Escaner-release.apk
+   flutter build appbundle --release    # AAB para Google Play Store
+   ```
+   La configuración de firma (`signingConfigs.release`) ya está en
+   `android/app/build.gradle.kts` y lee `android/key.properties`.
+
+> Guarda el keystore en un lugar seguro. Si se pierde, no podrás actualizar la
+> app en Play Store con la misma firma.
 
 ## Configuración
 
