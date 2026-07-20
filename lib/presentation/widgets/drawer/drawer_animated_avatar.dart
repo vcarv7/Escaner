@@ -29,11 +29,6 @@ class _DrawerAnimatedAvatarState extends State<DrawerAnimatedAvatar>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     _controller.repeat(reverse: true);
   }
 

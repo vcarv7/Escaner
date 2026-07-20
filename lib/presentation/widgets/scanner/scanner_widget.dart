@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/validation_utils.dart';
-import 'scanner_overlay.dart';
 import '../overlay/overlay_message.dart';
 import '../common/math_curve_loader.dart';
 
@@ -103,7 +102,6 @@ class _ScannerWidgetState extends State<ScannerWidget> {
                 controller: _controller,
                 onDetect: _handleDetect,
               ),
-              ScannerOverlay(isProcessing: _isProcessing),
               if (_isProcessing)
                 Container(
                   color: Colors.black.withValues(alpha: 0.5),

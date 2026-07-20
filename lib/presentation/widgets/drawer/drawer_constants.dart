@@ -1,5 +1,4 @@
 class DrawerConstants {
-  static const Duration drawerAnimation = Duration(milliseconds: 600);
   static const Duration avatarAnimation = Duration(milliseconds: 800);
 
   static const double iconContainerSize = 44.0;

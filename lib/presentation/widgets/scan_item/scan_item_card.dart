@@ -96,14 +96,27 @@ class ScanItemCard extends StatelessWidget {
     if (item.status == ScanStatus.reserved || item.status == ScanStatus.duplicate) {
       if (item.personaSolapine != null) {
         return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Solapín: ${item.personaSolapine}',
-              style: textStyle.copyWith(color: null),
+            Expanded(
+              child: Text(
+                'Solapín: ${item.personaSolapine}',
+                style: textStyle.copyWith(color: null),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
             if (item.evento != null) ...[
               const SizedBox(width: 12),
-              Text(item.evento!.displayName, style: textStyle),
+              Expanded(
+                child: Text(
+                  item.evento!.displayName,
+                  style: textStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  textAlign: TextAlign.end,
+                ),
+              ),
             ],
           ],
         );

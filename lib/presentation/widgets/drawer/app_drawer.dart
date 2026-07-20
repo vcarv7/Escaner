@@ -20,26 +20,7 @@ class AppDrawer extends StatefulWidget {
   State<AppDrawer> createState() => _AppDrawerState();
 }
 
-class _AppDrawerState extends State<AppDrawer>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: DrawerConstants.drawerAnimation,
-      vsync: this,
-    );
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
+class _AppDrawerState extends State<AppDrawer> {
   Future<void> _exportToExcel() async {
     if (!mounted) return;
     final scanProvider = context.read<ScanProvider>();
