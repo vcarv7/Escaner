@@ -52,3 +52,7 @@ test/*.mocks.dart
 /android/app/profile
 /android/app/release
 /android/app/proguard-rules.pro
+
+# Release signing (NEVER commit secrets / keystore)
+/android/key.properties
+/android/keystore/
