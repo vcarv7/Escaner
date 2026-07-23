@@ -4,7 +4,6 @@ import 'core/theme/app_theme.dart';
 import 'presentation/providers/scan_provider.dart';
 import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/evento_provider.dart';
-import 'presentation/providers/csv_provider.dart';
 import 'presentation/pages/home_page.dart';
 
 class App extends StatelessWidget {
@@ -17,7 +16,6 @@ class App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScanProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()..init()),
         ChangeNotifierProvider(create: (_) => EventoProvider()),
-        ChangeNotifierProvider(create: (_) => CsvProvider()..init()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {

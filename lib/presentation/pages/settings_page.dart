@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../providers/settings_provider.dart';
-import '../providers/csv_provider.dart';
-import '../widgets/overlay/overlay_message.dart';
-import '../widgets/common/math_curve_loader.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -17,15 +14,11 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: Consumer2<SettingsProvider, CsvProvider>(
-        builder: (context, settings, csvProvider, _) {
+      body: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionTitle('DATOS', colorScheme),
-              const SizedBox(height: 8),
-              _buildCsvUrlCard(context, settings, csvProvider, colorScheme),
-              const SizedBox(height: 24),
               _buildSectionTitle('APARIENCIA', colorScheme),
               const SizedBox(height: 8),
               _buildThemeCard(settings, colorScheme),
@@ -53,35 +46,6 @@ class SettingsPage extends StatelessWidget {
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: colorScheme.onSurface.withValues(alpha: 0.7),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCsvUrlCard(BuildContext context, SettingsProvider settings, CsvProvider csvProvider, ColorScheme colorScheme) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lista de personas',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
-            ),
-            const SizedBox(height: 14),
-            _UpdateButton(csvProvider: csvProvider),
-            const SizedBox(height: 10),
-            Text(
-              '${csvProvider.personas.length} personas cargadas',
-              style: TextStyle(fontSize: 14, color: colorScheme.onSurface.withValues(alpha: 0.6)),
-            ),
-          ],
         ),
       ),
     );
@@ -212,49 +176,6 @@ class SettingsPage extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _UpdateButton extends StatelessWidget {
-  final CsvProvider csvProvider;
-
-  const _UpdateButton({required this.csvProvider});
-
-  @override
-  Widget build(BuildContext context) {
-    return Builder(
-      builder: (ctx) {
-        return SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: csvProvider.isLoading ? null : () async {
-              final success = await csvProvider.actualizarLista();
-              if (!ctx.mounted) return;
-              if (success) {
-                OverlayMessage.success(ctx, 'Lista actualizada (${csvProvider.personas.length} personas)');
-              } else {
-                OverlayMessage.error(ctx, csvProvider.error ?? 'Error al descargar');
-              }
-            },
-            icon: csvProvider.isLoading
-                ? SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: MathCurveLoader.epicycloid(
-                      size: 24,
-                      color: Theme.of(ctx).colorScheme.primary,
-                      duration: const Duration(milliseconds: 1200),
-                      particleCount: 40,
-                      trailSpan: 0.4,
-                      strokeWidth: 3,
-                    ),
-                  )
-                : const Icon(Icons.download),
-            label: Text(csvProvider.isLoading ? 'Descargando...' : 'Actualizar Personas'),
-          ),
-        );
-      },
     );
   }
 }
