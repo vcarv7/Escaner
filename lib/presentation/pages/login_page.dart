@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
-import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -42,9 +41,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (success) {
       OverlayMessage.success(context, 'Bienvenido, ${_usernameController.text}');
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomePage()),
-      );
+      Navigator.of(context).pop();
     } else {
       OverlayMessage.error(context, authProvider.error ?? 'Error al iniciar sesión');
     }

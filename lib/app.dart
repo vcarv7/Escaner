@@ -7,7 +7,6 @@ import 'presentation/providers/evento_provider.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/persona_provider.dart';
 import 'presentation/pages/home_page.dart';
-import 'presentation/pages/login_page.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -22,15 +21,15 @@ class App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PersonaProvider()),
       ],
-      child: Consumer2<AuthProvider, SettingsProvider>(
-        builder: (context, auth, settings, _) {
+      child: Consumer<SettingsProvider>(
+        builder: (context, settings, _) {
           return MaterialApp(
             title: 'Escáner',
             theme: AppTheme.getTheme(false),
             darkTheme: AppTheme.getTheme(true),
             themeMode: settings.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
             debugShowCheckedModeBanner: false,
-            home: auth.isAuthenticated ? const HomePage() : const LoginPage(),
+            home: const HomePage(),
           );
         },
       ),
