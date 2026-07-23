@@ -4,9 +4,9 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/auto_delete_service.dart';
 import '../../domain/entities/scan_item.dart';
 import '../../domain/entities/evento.dart';
-import '../../domain/entities/persona.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
+import '../providers/persona_provider.dart';
 
 class ScanProvider extends ChangeNotifier {
   List<ScanItem> _items = [];
@@ -58,16 +58,16 @@ class ScanProvider extends ChangeNotifier {
     }
   }
 
-  bool addItem(String code, Evento evento, List<Persona> personas) {
-    return addItemFromScanner(code, evento, personas);
+  bool addItem(String code, Evento evento, PersonaProvider personaProvider) {
+    return addItemFromScanner(code, evento, personaProvider);
   }
 
-  bool addItemFromScanner(String code, Evento evento, List<Persona> personas) {
+  bool addItemFromScanner(String code, Evento evento, PersonaProvider personaProvider) {
     final codeNormalized = code.toUpperCase();
     if (!_isValidCode(codeNormalized)) return false;
 
     final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
-    final persona = _findPersonaByCodigoSolapin(codeNormalized, personas);
+    final persona = personaProvider.findPersona(codeNormalized);
 
     if (existingIndex != -1) {
       final existing = _items[existingIndex];
@@ -105,12 +105,12 @@ class ScanProvider extends ChangeNotifier {
     return true;
   }
 
-  bool addItemManual(String code, Evento evento, List<Persona> personas) {
+  bool addItemManual(String code, Evento evento, PersonaProvider personaProvider) {
     final codeNormalized = code.toUpperCase();
     if (!_isValidCode(codeNormalized)) return false;
 
     final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
-    final persona = _findPersonaBySolapin(codeNormalized, personas);
+    final persona = personaProvider.findPersona(codeNormalized);
 
     if (existingIndex != -1) {
       final existing = _items[existingIndex];
@@ -146,26 +146,6 @@ class ScanProvider extends ChangeNotifier {
     _saveItems();
     notifyListeners();
     return true;
-  }
-
-  Persona? _findPersonaByCodigoSolapin(String code, List<Persona> personas) {
-    final codeLower = code.toLowerCase();
-    for (final persona in personas) {
-      if (persona.codigoSolapin.toLowerCase() == codeLower) {
-        return persona;
-      }
-    }
-    return null;
-  }
-
-  Persona? _findPersonaBySolapin(String code, List<Persona> personas) {
-    final codeLower = code.toLowerCase();
-    for (final persona in personas) {
-      if (persona.solapin.toLowerCase() == codeLower) {
-        return persona;
-      }
-    }
-    return null;
   }
 
   bool _isValidCode(String code) {

@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
 import '../providers/settings_provider.dart';
+import '../providers/persona_provider.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/overlay/overlay_message.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
-
-  String _getVersion() {
-    return AppConstants.appVersion;
-  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: Consumer<SettingsProvider>(
-        builder: (context, settings, _) {
+      body: Consumer3<SettingsProvider, PersonaProvider, AuthProvider>(
+        builder: (context, settings, personaProvider, auth, _) {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _buildSectionTitle('SINCRONIZACIÓN', colorScheme),
+              const SizedBox(height: 8),
+              _buildSyncCard(context, personaProvider, colorScheme),
+              const SizedBox(height: 24),
               _buildSectionTitle('APARIENCIA', colorScheme),
               const SizedBox(height: 8),
               _buildThemeCard(settings, colorScheme),
@@ -26,6 +29,10 @@ class SettingsPage extends StatelessWidget {
               _buildSectionTitle('AL ESCANEAR', colorScheme),
               const SizedBox(height: 8),
               _buildFeedbackCard(settings, colorScheme),
+              const SizedBox(height: 24),
+              _buildSectionTitle('CUENTA', colorScheme),
+              const SizedBox(height: 8),
+              _buildAccountCard(context, auth, colorScheme),
               const SizedBox(height: 24),
               _buildSectionTitle('ACERCA DE', colorScheme),
               const SizedBox(height: 8),
@@ -49,6 +56,89 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildSyncCard(BuildContext context, PersonaProvider personaProvider, ColorScheme colorScheme) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Lista de personas',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: personaProvider.isSyncing ? null : () async {
+                      final success = await personaProvider.syncPersonas();
+                      if (!context.mounted) return;
+                      if (success) {
+                        OverlayMessage.success(context, 'Sincronización completada (${personaProvider.totalCount} personas)');
+                      } else {
+                        OverlayMessage.error(context, personaProvider.error ?? 'Error al sincronizar');
+                      }
+                    },
+                    icon: personaProvider.isSyncing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.sync_rounded),
+                    label: Text(personaProvider.isSyncing ? 'Sincronizando...' : 'Sincronizar ahora'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (personaProvider.lastSync != null) ...[
+              Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+              const SizedBox(height: 8),
+              Text(
+                'Última sincronización: ${_formatDateTime(personaProvider.lastSync!)}',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+              Text(
+                '${personaProvider.totalCount} personas cargadas',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+            ] else if (personaProvider.hasPersonas) ...[
+              Divider(color: colorScheme.outline.withValues(alpha: 0.2)),
+              const SizedBox(height: 8),
+              Text(
+                '${personaProvider.totalCount} personas en caché local',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+            ],
+            if (personaProvider.error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Error: ${personaProvider.error}',
+                style: TextStyle(fontSize: 13, color: Colors.red.shade700),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDateTime(DateTime dt) {
+    return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildThemeCard(SettingsProvider settings, ColorScheme colorScheme) {
@@ -131,6 +221,78 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
+  Widget _buildAccountCard(BuildContext context, AuthProvider auth, ColorScheme colorScheme) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (auth.username != null) ...[
+              Text(
+                'Sesión iniciada como',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                auth.username!,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+              ),
+              const SizedBox(height: 16),
+            ],
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showLogoutDialog(context, auth),
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Cerrar sesión'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  foregroundColor: Colors.red.shade700,
+                  side: BorderSide(color: Colors.red.shade700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLogoutDialog(BuildContext context, AuthProvider auth) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Estás seguro de que quieres cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await auth.logout();
+      if (context.mounted) {
+        OverlayMessage.success(context, 'Sesión cerrada correctamente');
+      }
+    }
+  }
+
   Widget _buildAboutCard(ColorScheme colorScheme) {
     return Card(
       elevation: 0,
@@ -177,5 +339,9 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getVersion() {
+    return AppConstants.appVersion;
   }
 }
