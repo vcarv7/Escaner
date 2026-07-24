@@ -40,10 +40,16 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
-      OverlayMessage.success(context, 'Bienvenido, ${_usernameController.text}');
+      OverlayMessage.success(
+        context,
+        'Bienvenido, ${_usernameController.text}',
+      );
       Navigator.of(context).pop();
     } else {
-      OverlayMessage.error(context, authProvider.error ?? 'Error al iniciar sesión');
+      OverlayMessage.error(
+        context,
+        authProvider.error ?? 'Error al iniciar sesión',
+      );
     }
   }
 
@@ -102,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Escáner de Solapines',
+          'SIGA Escaner',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,
@@ -112,9 +118,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 8),
         Text(
           'Inicia sesión para continuar',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
       ],
@@ -133,9 +139,7 @@ class _LoginPageState extends State<LoginPage> {
             labelText: 'Usuario',
             hintText: 'Ingresa tu usuario',
             prefixIcon: const Icon(Icons.person_outline_rounded),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
           ),
           validator: (value) {
@@ -163,11 +167,10 @@ class _LoginPageState extends State<LoginPage> {
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
           ),
           validator: (value) {
@@ -195,7 +198,9 @@ class _LoginPageState extends State<LoginPage> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.login_rounded),
-      label: Text(authProvider.isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'),
+      label: Text(
+        authProvider.isLoading ? 'Iniciando sesión...' : 'Iniciar sesión',
+      ),
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -222,9 +227,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 16),
         Text(
           'Versión 0.8.5+1',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 4),
         Text(
@@ -237,9 +242,9 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 4),
         Text(
           '© 2026',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
       ],
     );

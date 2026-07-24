@@ -22,7 +22,10 @@ class PersonaApiDatasource {
         queryParams['activo'] = 'true';
       }
 
-      final response = await _apiClient.get('/api/v1/personas', queryParameters: queryParams);
+      final response = await _apiClient.get(
+        '/api/v1/base/personas',
+        queryParameters: queryParams,
+      );
 
       if (response.statusCode != 200) {
         throw Exception('Error syncing personas: ');
