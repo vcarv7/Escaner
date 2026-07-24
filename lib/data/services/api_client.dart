@@ -42,8 +42,8 @@ class _LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (ApiConstants.baseUrl.contains('10.11.6.48')) {
-      // print('🌐 REQUEST[${options.method}] ${options.uri}');
-      // if (options.data != null) print('   Data: ${options.data}');
+      print('🌐 REQUEST[${options.method}] ${options.uri}');
+      if (options.data != null) print('   Data: ${options.data}');
     }
     handler.next(options);
   }
@@ -51,7 +51,7 @@ class _LoggingInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     if (ApiConstants.baseUrl.contains('10.11.6.48')) {
-      // print('✅ RESPONSE[${response.statusCode}] ${response.requestOptions.uri}');
+      print('✅ RESPONSE[${response.statusCode}] ${response.requestOptions.uri}');
     }
     handler.next(response);
   }
@@ -59,7 +59,7 @@ class _LoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (ApiConstants.baseUrl.contains('10.11.6.48')) {
-      // print('❌ ERROR[${err.response?.statusCode}] ${err.requestOptions.uri}: ${err.message}');
+      print('❌ ERROR[${err.response?.statusCode}] ${err.requestOptions.uri}: ${err.message}');
     }
     handler.next(err);
   }
