@@ -96,10 +96,7 @@ class _AppDrawerState extends State<AppDrawer> {
       child: SafeArea(
         child: Column(
           children: [
-            const DrawerProfileSection(
-              userName: DrawerConstants.defaultUserName,
-              userEmail: 'Invitado',
-            ),
+            const DrawerProfileSection(),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(

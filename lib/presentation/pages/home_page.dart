@@ -6,7 +6,7 @@ import '../../data/services/auto_delete_service.dart';
 import '../../domain/entities/scan_item.dart';
 import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
-import '../providers/csv_provider.dart';
+import '../providers/persona_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/scanner/scanner_widget.dart';
 import '../widgets/solapines_list.dart';
@@ -30,12 +30,11 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   StreamSubscription<AutoDeleteNotification>? _cleanupSubscription;
 
-  @override
+@override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScanProvider>().init();
-      context.read<CsvProvider>().init();
       _escucharLimpieza();
     });
   }
@@ -75,13 +74,13 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, 'Selecciona un evento primero');
       return;
     }
-    final csvProvider = context.read<CsvProvider>();
+    final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
       return;
     }
-    final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, csvProvider.personas);
+    final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, personaProvider);
     if (isNew) {
       context.read<SettingsProvider>().triggerScanFeedback();
       final item = provider.items.last;
@@ -105,13 +104,13 @@ class _HomePageState extends State<HomePage> {
       OverlayMessage.error(context, 'Selecciona un evento primero');
       return;
     }
-    final csvProvider = context.read<CsvProvider>();
+    final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
     if (!ValidationUtils.isValidCode(code)) {
       OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
       return;
     }
-    final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, csvProvider.personas);
+    final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, personaProvider);
     if (isNew) {
       context.read<SettingsProvider>().triggerScanFeedback();
       final item = provider.items.last;
