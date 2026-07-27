@@ -59,6 +59,32 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildSyncCard(BuildContext context, PersonaProvider personaProvider, ColorScheme colorScheme) {
+    Color? errorColor;
+    IconData? errorIcon;
+    
+    if (personaProvider.error != null) {
+      final errorMsg = personaProvider.error!.toLowerCase();
+      if (errorMsg.contains('tiempo') || errorMsg.contains('timeout')) {
+        errorColor = Colors.orange.shade700;
+        errorIcon = Icons.access_time;
+      } else if (errorMsg.contains('conexión') || errorMsg.contains('sin conexión') || errorMsg.contains('red')) {
+        errorColor = Colors.red.shade700;
+        errorIcon = Icons.wifi_off;
+      } else if (errorMsg.contains('servidor') || errorMsg.contains('500')) {
+        errorColor = Colors.red.shade700;
+        errorIcon = Icons.error_outline;
+      } else if (errorMsg.contains('no autorizado') || errorMsg.contains('sesión expirada')) {
+        errorColor = Colors.orange.shade700;
+        errorIcon = Icons.lock_outline;
+      } else if (errorMsg.contains('acceso denegado')) {
+        errorColor = Colors.red.shade700;
+        errorIcon = Icons.block;
+      } else {
+        errorColor = Colors.red.shade700;
+        errorIcon = Icons.error_outline;
+      }
+    }
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -126,9 +152,17 @@ class SettingsPage extends StatelessWidget {
             ],
             if (personaProvider.error != null) ...[
               const SizedBox(height: 8),
-              Text(
-                'Error: ${personaProvider.error}',
-                style: TextStyle(fontSize: 13, color: Colors.red.shade700),
+              Row(
+                children: [
+                  Icon(errorIcon, size: 16, color: errorColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      personaProvider.error!,
+                      style: TextStyle(fontSize: 13, color: errorColor),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],

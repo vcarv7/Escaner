@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
 
@@ -18,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _isLoginTimeout = false;
 
   @override
   void dispose() {
@@ -32,10 +34,32 @@ class _LoginPageState extends State<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = context.read<AuthProvider>();
-    final success = await authProvider.login(
-      _usernameController.text.trim(),
-      _passwordController.text,
-    );
+    
+    // Add timeout to login request
+    bool success = false;
+    try {
+      success = await authProvider.login(
+        _usernameController.text.trim(),
+        _passwordController.text,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          if (mounted) {
+            setState(() {
+              _isLoginTimeout = true;
+            });
+          }
+          return false;
+        },
+      );
+    } on TimeoutException {
+      if (mounted) {
+        setState(() {
+          _isLoginTimeout = true;
+        });
+      }
+      return;
+    }
 
     if (!mounted) return;
 
@@ -46,9 +70,13 @@ class _LoginPageState extends State<LoginPage> {
       );
       Navigator.of(context).pop();
     } else {
+      String errorMessage = authProvider.error ?? 'Error al iniciar sesión';
+      if (_isLoginTimeout) {
+        errorMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
+      }
       OverlayMessage.error(
         context,
-        authProvider.error ?? 'Error al iniciar sesión',
+        errorMessage,
       );
     }
   }

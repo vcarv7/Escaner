@@ -117,11 +117,17 @@ class AuthProvider extends ChangeNotifier {
     if (msg.contains('401') || msg.toLowerCase().contains('unauthorized') || msg.toLowerCase().contains('invalid')) {
       return 'Credenciales inválidas';
     }
+    if (msg.contains('403') || msg.toLowerCase().contains('forbidden')) {
+      return 'Acceso denegado';
+    }
     if (msg.contains('500') || msg.toLowerCase().contains('server')) {
       return 'Error del servidor. Intenta más tarde.';
     }
     if (msg.toLowerCase().contains('timeout') || msg.toLowerCase().contains('connection')) {
       return 'Sin conexión. Verifica tu red.';
+    }
+    if (msg.contains('404')) {
+      return 'Endpoint no encontrado';
     }
     return 'Error: ${msg.replaceFirst('Exception: ', '')}';
   }

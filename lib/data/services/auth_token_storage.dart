@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthTokenStorage {
@@ -5,6 +6,7 @@ class AuthTokenStorage {
   static const _keyRefreshToken = 'refresh_token';
   static const _keyExpiresAt = 'token_expires_at';
   static const _keyUsername = 'username';
+  static const _keyUserData = 'user_data';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -17,6 +19,7 @@ class AuthTokenStorage {
     required String refreshToken,
     required int expiresInSeconds,
     String? username,
+    Map<String, dynamic>? userData,
   }) async {
     final expiresAt = DateTime.now().add(Duration(seconds: expiresInSeconds)).toIso8601String();
     await Future.wait([
@@ -24,6 +27,7 @@ class AuthTokenStorage {
       _storage.write(key: _keyRefreshToken, value: refreshToken),
       _storage.write(key: _keyExpiresAt, value: expiresAt),
       if (username != null) _storage.write(key: _keyUsername, value: username),
+      if (userData != null) _storage.write(key: _keyUserData, value: jsonEncode(userData)),
     ]);
   }
 
@@ -35,6 +39,16 @@ class AuthTokenStorage {
     return _storage.read(key: _keyRefreshToken);
   }
 
+  Future<String?> getUsername() async {
+    return _storage.read(key: _keyUsername);
+  }
+
+  Future<Map<String, dynamic>?> getUserData() async {
+    final data = await _storage.read(key: _keyUserData);
+    if (data == null) return null;
+    return jsonDecode(data) as Map<String, dynamic>;
+  }
+
   Future<bool> isTokenValid() async {
     final expiresAtStr = await _storage.read(key: _keyExpiresAt);
     if (expiresAtStr == null) return false;
@@ -43,20 +57,13 @@ class AuthTokenStorage {
     return DateTime.now().isBefore(expiresAt.subtract(const Duration(minutes: 1)));
   }
 
-  Future<String?> getUsername() async {
-    return _storage.read(key: _keyUsername);
-  }
-
-  Future<void> saveUsername(String username) async {
-    await _storage.write(key: _keyUsername, value: username);
-  }
-
   Future<void> clear() async {
     await Future.wait([
       _storage.delete(key: _keyAccessToken),
       _storage.delete(key: _keyRefreshToken),
       _storage.delete(key: _keyExpiresAt),
       _storage.delete(key: _keyUsername),
+      _storage.delete(key: _keyUserData),
     ]);
   }
 }

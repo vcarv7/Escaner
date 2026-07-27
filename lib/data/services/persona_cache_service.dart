@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/persona.dart';
 
 class SyncMeta {
@@ -52,6 +53,7 @@ class PersonaCacheService {
           .map(Persona.fromMap)
           .toList();
     } catch (e) {
+      debugPrint('PersonaCacheService.loadCache error: $e');
       return [];
     }
   }
@@ -62,15 +64,19 @@ class PersonaCacheService {
       final jsonList = personas.map((p) => p.toMap()).toList();
       await file.writeAsString(json.encode(jsonList));
     } catch (e) {
-      // Silent fail - cache is optional
+      debugPrint('PersonaCacheService.saveCache error: $e');
     }
   }
 
   Future<void> saveCacheWithMeta(List<Persona> personas, SyncMeta meta) async {
-    await Future.wait([
-      saveCache(personas),
-      saveMeta(meta),
-    ]);
+    try {
+      await Future.wait([
+        saveCache(personas),
+        saveMeta(meta),
+      ]);
+    } catch (e) {
+      debugPrint('PersonaCacheService.saveCacheWithMeta error: $e');
+    }
   }
 
   Future<SyncMeta?> loadMeta() async {
@@ -83,6 +89,7 @@ class PersonaCacheService {
 
       return SyncMeta.fromJson(json.decode(content) as Map<String, dynamic>);
     } catch (e) {
+      debugPrint('PersonaCacheService.loadMeta error: $e');
       return null;
     }
   }
@@ -92,7 +99,7 @@ class PersonaCacheService {
       final file = await _getMetaFile();
       await file.writeAsString(json.encode(meta.toJson()));
     } catch (e) {
-      // Silent fail
+      debugPrint('PersonaCacheService.saveMeta error: $e');
     }
   }
 
@@ -105,7 +112,7 @@ class PersonaCacheService {
         metaFile.delete(),
       ]);
     } catch (e) {
-      // Silent fail
+      debugPrint('PersonaCacheService.clearCache error: $e');
     }
   }
 }

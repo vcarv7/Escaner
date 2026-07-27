@@ -1,11 +1,16 @@
-﻿import '../../domain/repositories/persona_repository.dart';
+﻿import 'package:dio/dio.dart';
+import 'dart:async';
 import '../../domain/entities/persona.dart';
+import '../../domain/repositories/persona_repository.dart';
+import '../../core/errors/app_exception.dart';
 import '../services/api_client.dart';
 
 class PersonaApiDatasource {
   final ApiClient _apiClient;
 
   PersonaApiDatasource(this._apiClient);
+
+  static const Duration _requestTimeout = Duration(seconds: 15);
 
   Future<PersonaSyncResult> syncAllPersonas({bool onlyActive = true}) async {
     final List<Persona> allPersonas = [];
@@ -22,13 +27,21 @@ class PersonaApiDatasource {
         queryParams['activo'] = 'true';
       }
 
-      final response = await _apiClient.get(
-        '/api/v1/base/personas',
-        queryParameters: queryParams,
-      );
+      Response<dynamic> response;
+      try {
+        response = await _apiClient
+            .get('/api/v1/base/personas/', queryParameters: queryParams)
+            .timeout(_requestTimeout, onTimeout: () {
+          throw AppException.timeout('La descarga de personas tardó más de 15 segundos');
+        });
+      } on TimeoutException {
+        throw AppException.timeout('La descarga de personas tardó más de 15 segundos');
+      } on DioException catch (e) {
+        throw AppException.fromDioException(e);
+      }
 
       if (response.statusCode != 200) {
-        throw Exception('Error syncing personas: ');
+        throw AppException.fromStatusCode(response.statusCode!);
       }
 
       final data = response.data as Map<String, dynamic>;
@@ -45,6 +58,7 @@ class PersonaApiDatasource {
 
       totalCount = data['count'] as int? ?? 0;
       totalPages = (totalCount / 100).ceil();
+
       currentPage++;
     } while (currentPage <= totalPages);
 

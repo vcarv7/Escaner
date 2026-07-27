@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'dart:async';
 import '../../domain/entities/persona.dart';
 import '../../domain/repositories/persona_repository.dart';
 import '../../data/repositories/persona_repository_impl.dart';
 import '../../data/datasources/persona_api_datasource.dart';
 import '../../data/services/persona_cache_service.dart';
 import '../../data/services/api_client.dart';
+import '../../core/errors/app_exception.dart';
 
 class PersonaProvider extends ChangeNotifier {
   final PersonaRepository _repository;
@@ -51,8 +53,10 @@ class PersonaProvider extends ChangeNotifier {
         final meta = await PersonaCacheService().loadMeta();
         _lastSync = meta?.lastSync;
       }
+    } on AppException catch (e) {
+      _error = _mapError(e);
     } catch (e) {
-      _error = 'Error cargando caché: $e';
+      _error = _mapError(Exception(e.toString()));
     }
 
     _isLoading = false;
@@ -75,12 +79,48 @@ class PersonaProvider extends ChangeNotifier {
       _isSyncing = false;
       notifyListeners();
       return true;
+    } on AppException catch (e) {
+      _error = _mapError(e);
+      _isSyncing = false;
+      notifyListeners();
+      return false;
+    } on TimeoutException catch (e) {
+      _error = _mapError(AppException.timeout(e.message));
+      _isSyncing = false;
+      notifyListeners();
+      return false;
     } catch (e) {
-      _error = 'Error sincronizando: $e';
+      _error = _mapError(Exception(e.toString()));
       _isSyncing = false;
       notifyListeners();
       return false;
     }
+  }
+
+  String _mapError(Object error) {
+    if (error is AppException) {
+      return error.message;
+    }
+    final msg = error.toString();
+    if (msg.toLowerCase().contains('timeout')) {
+      return 'Tiempo de espera agotado. Verifica tu conexión.';
+    }
+    if (msg.toLowerCase().contains('connection') || msg.toLowerCase().contains('socket')) {
+      return 'Sin conexión. Verifica tu red.';
+    }
+    if (msg.contains('401') || msg.toLowerCase().contains('unauthorized')) {
+      return 'Sesión expirada. Inicia sesión nuevamente.';
+    }
+    if (msg.contains('403') || msg.toLowerCase().contains('forbidden')) {
+      return 'Acceso denegado.';
+    }
+    if (msg.contains('500') || msg.toLowerCase().contains('server')) {
+      return 'Error del servidor. Intenta más tarde.';
+    }
+    if (msg.contains('404')) {
+      return 'Recurso no encontrado.';
+    }
+    return 'Error: ${msg.replaceFirst('Exception: ', '')}';
   }
 
   Persona? findByCodigoSolapin(String codigo) {

@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
+import '../services/auth_interceptor.dart';
+import '../services/auth_token_storage.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -12,10 +14,16 @@ class ApiClient {
       baseUrl: ApiConstants.baseUrl,
       connectTimeout: ApiConstants.connectTimeout,
       receiveTimeout: ApiConstants.receiveTimeout,
-      headers: {'Content-Type': 'application/json'},
+      sendTimeout: ApiConstants.sendTimeout,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
     ));
 
+    // Auth interceptor must be added first to handle 401 before retry
     _dio.interceptors.addAll([
+      AuthInterceptor(AuthTokenStorage()),
       _LoggingInterceptor(),
       _RetryInterceptor(),
     ]);
@@ -60,6 +68,9 @@ class _LoggingInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (ApiConstants.baseUrl.contains('10.11.6.48')) {
       print('❌ ERROR[${err.response?.statusCode}] ${err.requestOptions.uri}: ${err.message}');
+      if (err.response?.data != null) {
+        print('   Response: ${err.response!.data}');
+      }
     }
     handler.next(err);
   }
