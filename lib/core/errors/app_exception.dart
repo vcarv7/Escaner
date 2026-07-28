@@ -32,50 +32,23 @@ class AppException implements Exception {
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         if (statusCode != null) {
-          if (statusCode >= 500) {
-return AppException(
-          type: AppErrorType.serverError,
-          message: 'Error del servidor. Intenta más tarde.',
-          technicalMessage: e.message,
-          statusCode: statusCode,
-        );
-      }
-      if (statusCode == 401) {
-        return AppException(
-          type: AppErrorType.unauthorized,
-          message: 'Sesión expirada. Inicia sesión nuevamente.',
-          technicalMessage: e.message,
-          statusCode: statusCode,
-        );
-      }
-      if (statusCode == 403) {
-        return AppException(
-          type: AppErrorType.forbidden,
-          message: 'Acceso denegado.',
-          technicalMessage: e.message,
-          statusCode: statusCode,
-        );
-      }
-      if (statusCode == 404) {
-        return AppException(
-          type: AppErrorType.notFound,
-          message: 'Recurso no encontrado.',
-          technicalMessage: e.message,
-          statusCode: statusCode,
-        );
-      }
-      if (statusCode >= 400) {
-        return AppException(
-          type: AppErrorType.clientError,
-          message: 'Error en la petición ($statusCode).',
-          technicalMessage: e.message,
-          statusCode: statusCode,
-        );
-      }
+          return AppException.fromStatusCode(statusCode, e.message);
         }
         return AppException(
           type: AppErrorType.unknown,
           message: 'Error inesperado.',
+          technicalMessage: e.message,
+        );
+      case DioExceptionType.cancel:
+        return AppException(
+          type: AppErrorType.requestCancelled,
+          message: 'Petición cancelada.',
+          technicalMessage: e.message,
+        );
+      case DioExceptionType.unknown:
+        return AppException(
+          type: AppErrorType.unknownNetwork,
+          message: 'Error de red desconocido. Verifica tu conexión.',
           technicalMessage: e.message,
         );
       default:
@@ -114,6 +87,20 @@ return AppException(
         return AppException(
           type: AppErrorType.notFound,
           message: 'Recurso no encontrado.',
+          technicalMessage: message,
+          statusCode: statusCode,
+        );
+      case 408:
+        return AppException(
+          type: AppErrorType.timeout,
+          message: 'Tiempo de espera de la petición agotado.',
+          technicalMessage: message,
+          statusCode: statusCode,
+        );
+      case 429:
+        return AppException(
+          type: AppErrorType.tooManyRequests,
+          message: 'Demasiadas peticiones. Espera un momento e intenta de nuevo.',
           technicalMessage: message,
           statusCode: statusCode,
         );
@@ -162,5 +149,10 @@ enum AppErrorType {
   unauthorized,
   forbidden,
   notFound,
+  badCertificate,
+  tooManyRedirects,
+  requestCancelled,
+  tooManyRequests,
+  unknownNetwork,
   unknown,
 }

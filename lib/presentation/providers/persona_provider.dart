@@ -81,6 +81,22 @@ class PersonaProvider extends ChangeNotifier {
       return true;
     } on AppException catch (e) {
       _error = _mapError(e);
+      if (_personas.isNotEmpty) {
+        _isSyncing = false;
+        notifyListeners();
+        return false;
+      }
+      try {
+        final cache = await _repository.getAllPersonas();
+        if (cache.isNotEmpty) {
+          _personas = cache;
+          _buildIndexes(_personas);
+          _totalCount = cache.length;
+          _isSyncing = false;
+          notifyListeners();
+          return false;
+        }
+      } catch (_) {}
       _isSyncing = false;
       notifyListeners();
       return false;
