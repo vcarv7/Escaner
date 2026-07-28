@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'core/utils/app_logger.dart';
 import 'app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
+  initAppLogger();
+
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
     debugPrint('FlutterError: ${details.exception}\n${details.stack}');
-    // Versión futura: Crashlytics.recordFlutterFatalError(details);
   };
 
   ErrorWidget.builder = (details) {
@@ -42,7 +44,6 @@ void main() {
     () => runApp(const App()),
     (error, stack) {
       debugPrint('Uncaught error: $error\n$stack');
-      // Versión futura: Crashlytics.recordError(error, stack);
     },
   );
 }
