@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
+import 'dart:async';
 import '../services/api_client.dart';
+import '../../core/constants/api_constants.dart';
+import '../../core/errors/app_exception.dart';
 import '../services/auth_token_storage.dart';
 
 class AuthTokens {
@@ -44,20 +47,21 @@ class AuthApiDatasource {
 
   AuthApiDatasource(this._apiClient, this._tokenStorage);
 
-  Future<AuthTokens> login(String username, String password) async {
-    // Step 1: Get CSRF token by making a GET request to the base URL
-    // This should set the csrftoken cookie
+  static const Duration _requestTimeout = Duration(seconds: 15);
+
+  Future<AuthTokens> login(String username, String password, {CancelToken? cancelToken}) async {
     String? csrfToken;
     try {
-      final csrfResponse = await _apiClient.dio.get(
-        '/',
-        options: Options(
-          headers: {
-            'Accept': 'application/json',
-          },
-        ),
-      );
-      // Extract CSRF token from Set-Cookie header
+      final csrfResponse = await _apiClient.dio
+          .get(
+            '/',
+            options: Options(
+              headers: {
+                'Accept': 'application/json',
+              },
+            ),
+          )
+          .timeout(_requestTimeout);
       final setCookie = csrfResponse.headers['set-cookie'];
       if (setCookie != null && setCookie.isNotEmpty) {
         for (final cookie in setCookie) {
@@ -69,25 +73,38 @@ class AuthApiDatasource {
           }
         }
       }
-    } catch (e) {
-      // If CSRF fetch fails, continue without it - some configs may not require it
+    } on TimeoutException {
+      csrfToken = null;
+    } on DioException {
+      csrfToken = null;
+    } catch (_) {
+      csrfToken = null;
     }
 
-    // Step 2: Login with credentials and CSRF token
-    final response = await _apiClient.dio.post(
-      '/api/v1/auth/token/',
-      data: {
-        'username': username,
-        'password': password,
-      },
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          if (csrfToken != null) 'X-CSRFToken': csrfToken!,
-        },
-      ),
-    );
+    Response<dynamic> response;
+    try {
+      response = await _apiClient.dio
+          .post(
+            '/api/v1/auth/token/',
+            data: {
+              'username': username,
+              'password': password,
+            },
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                if (csrfToken != null) 'X-CSRFToken': csrfToken,
+              },
+            ),
+            cancelToken: cancelToken,
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw AppException.timeout('La conexión con el servidor tardó más de 15 segundos');
+    } on DioException catch (e) {
+      throw AppException.fromDioException(e);
+    }
 
     if (response.statusCode == 200) {
       final tokens = AuthTokens.fromJson(response.data as Map<String, dynamic>);
@@ -99,25 +116,33 @@ class AuthApiDatasource {
         userData: tokens.user,
       );
       return tokens;
-    } else {
-      throw _handleError(response);
     }
+    throw AppException.fromStatusCode(response.statusCode!);
   }
 
   Future<AuthTokens> refreshToken() async {
-    final refreshToken = await _tokenStorage.getRefreshToken();
-    if (refreshToken == null) throw Exception('No refresh token available');
+    final refreshTokenVal = await _tokenStorage.getRefreshToken();
+    if (refreshTokenVal == null) throw AppException.noConnection('No refresh token available');
 
-    final response = await _apiClient.dio.post(
-      '/api/v1/auth/token/refresh/',
-      data: {'refresh': refreshToken},
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
+    Response<dynamic> response;
+    try {
+      response = await _apiClient.dio
+          .post(
+            ApiConstants.authRefresh,
+            data: {'refresh': refreshTokenVal},
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw AppException.timeout('La conexión con el servidor tardó más de 15 segundos');
+    } on DioException catch (e) {
+      throw AppException.fromDioException(e);
+    }
 
     if (response.statusCode == 200) {
       final tokens = AuthTokens.fromJson(response.data as Map<String, dynamic>);
@@ -129,39 +154,31 @@ class AuthApiDatasource {
         userData: await _tokenStorage.getUserData(),
       );
       return tokens;
-    } else {
-      await _tokenStorage.clear();
-      throw _handleError(response);
     }
+    await _tokenStorage.clear();
+    throw AppException.fromStatusCode(response.statusCode!);
   }
 
   Future<bool> verifyToken(String accessToken) async {
-    final response = await _apiClient.dio.post(
-      '/api/v1/auth/token/verify/',
-      data: {'token': accessToken},
-      options: Options(
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-    return response.statusCode == 200;
-  }
-
-  Exception _handleError(Response response) {
-    final data = response.data;
-    String message;
-    if (data is Map && data.containsKey('detail')) {
-      message = data['detail'] as String;
-    } else if (data is Map && data.containsKey('message')) {
-      message = data['message'] as String;
-    } else if (data is Map && data.containsKey('non_field_errors')) {
-      final errors = data['non_field_errors'] as List;
-      message = errors.join(', ');
-    } else {
-      message = 'Error de autenticación (${response.statusCode})';
+    Response<dynamic> response;
+    try {
+      response = await _apiClient.dio
+          .post(
+            ApiConstants.authVerify,
+            data: {'token': accessToken},
+            options: Options(
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              },
+            ),
+          )
+          .timeout(_requestTimeout);
+    } on TimeoutException {
+      throw AppException.timeout('La conexión con el servidor tardó más de 15 segundos');
+    } on DioException catch (e) {
+      throw AppException.fromDioException(e);
     }
-    return Exception(message);
+    return response.statusCode == 200;
   }
 }

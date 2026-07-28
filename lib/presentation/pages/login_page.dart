@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:dio/dio.dart';
 import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
@@ -19,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
   bool _rememberMe = false;
-  bool _isLoginTimeout = false;
+  CancelToken? _loginCancelToken;
 
   @override
   void dispose() {
@@ -27,39 +28,42 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     _usernameFocus.dispose();
     _passwordFocus.dispose();
+    _loginCancelToken?.cancel();
     super.dispose();
   }
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
+    _loginCancelToken?.cancel();
+    _loginCancelToken = CancelToken();
+
     final authProvider = context.read<AuthProvider>();
-    
-    // Add timeout to login request
+
     bool success = false;
+    String? timeoutMessage;
+
     try {
       success = await authProvider.login(
         _usernameController.text.trim(),
         _passwordController.text,
+        cancelToken: _loginCancelToken,
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () {
-          if (mounted) {
-            setState(() {
-              _isLoginTimeout = true;
-            });
-          }
+          _loginCancelToken?.cancel();
+          timeoutMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
           return false;
         },
       );
     } on TimeoutException {
-      if (mounted) {
-        setState(() {
-          _isLoginTimeout = true;
-        });
-      }
-      return;
+      _loginCancelToken?.cancel();
+      timeoutMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
+    } catch (_) {
+      _loginCancelToken?.cancel();
     }
+
+    _loginCancelToken = null;
 
     if (!mounted) return;
 
@@ -71,8 +75,8 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.of(context).pop();
     } else {
       String errorMessage = authProvider.error ?? 'Error al iniciar sesión';
-      if (_isLoginTimeout) {
-        errorMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
+      if (timeoutMessage != null) {
+        errorMessage = timeoutMessage!;
       }
       OverlayMessage.error(
         context,

@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
+import 'dart:async';
 import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/services/auth_token_storage.dart';
 import '../../data/services/api_client.dart';
+import '../../core/errors/app_exception.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthApiDatasource _authApi;
@@ -76,7 +79,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password, {CancelToken? cancelToken}) async {
     if (username.trim().isEmpty || password.trim().isEmpty) {
       _error = 'Usuario y contraseña son requeridos';
       notifyListeners();
@@ -88,14 +91,35 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authApi.login(username.trim(), password);
+      await _authApi.login(username.trim(), password, cancelToken: cancelToken);
       _isAuthenticated = true;
       _username = username.trim();
       _isLoading = false;
       notifyListeners();
       return true;
-    } on Exception catch (e) {
+    } on AppException catch (e) {
       _error = _mapError(e);
+      _isAuthenticated = false;
+      _username = null;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on TimeoutException catch (e) {
+      _error = _mapError(AppException.timeout(e.message));
+      _isAuthenticated = false;
+      _username = null;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } on DioException catch (e) {
+      _error = _mapError(AppException.fromDioException(e));
+      _isAuthenticated = false;
+      _username = null;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = _mapError(Exception(e.toString()));
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -112,22 +136,19 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _mapError(Exception e) {
-    final msg = e.toString();
-    if (msg.contains('401') || msg.toLowerCase().contains('unauthorized') || msg.toLowerCase().contains('invalid')) {
-      return 'Credenciales inválidas';
+  String _mapError(Object error) {
+    if (error is AppException) {
+      return error.message;
     }
-    if (msg.contains('403') || msg.toLowerCase().contains('forbidden')) {
-      return 'Acceso denegado';
+    final msg = error.toString();
+    if (msg.toLowerCase().contains('timeout')) {
+      return 'Tiempo de espera agotado. Verifica tu conexión.';
+    }
+    if (msg.toLowerCase().contains('connection') || msg.toLowerCase().contains('socket')) {
+      return 'Sin conexión. Verifica tu red.';
     }
     if (msg.contains('500') || msg.toLowerCase().contains('server')) {
       return 'Error del servidor. Intenta más tarde.';
-    }
-    if (msg.toLowerCase().contains('timeout') || msg.toLowerCase().contains('connection')) {
-      return 'Sin conexión. Verifica tu red.';
-    }
-    if (msg.contains('404')) {
-      return 'Endpoint no encontrado';
     }
     return 'Error: ${msg.replaceFirst('Exception: ', '')}';
   }

@@ -1,18 +1,19 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import '../../core/constants/api_constants.dart';
 import '../services/auth_token_storage.dart';
 
 class AuthInterceptor extends Interceptor {
   final AuthTokenStorage _tokenStorage;
+  final Dio _dio;
 
   bool _isRefreshing = false;
   final List<_QueuedRequest> _requestQueue = [];
 
-  AuthInterceptor(this._tokenStorage);
+  AuthInterceptor(this._tokenStorage, this._dio);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    // Skip auth for login/refresh/verify endpoints
     final skipAuth = options.path.contains('/auth/token');
     if (!skipAuth) {
       final accessToken = await _tokenStorage.getAccessToken();
@@ -25,7 +26,6 @@ class AuthInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
-    // Only handle 401 errors on authenticated requests
     if (err.response?.statusCode == 401 && !err.requestOptions.path.contains('/auth/token')) {
       await _handle401(err, handler);
       return;
@@ -34,7 +34,6 @@ class AuthInterceptor extends Interceptor {
   }
 
   Future<void> _handle401(DioException err, ErrorInterceptorHandler handler) async {
-    // If already refreshing, queue this request
     if (_isRefreshing) {
       await _queueRequest(err.requestOptions, handler);
       return;
@@ -51,9 +50,8 @@ class AuthInterceptor extends Interceptor {
         return;
       }
 
-      // Attempt to refresh token
-      final response = await Dio().post(
-        'http://10.11.6.48:7000/api/v1/auth/token/refresh/',
+      final response = await _dio.post(
+        ApiConstants.authRefresh,
         data: {'refresh': refreshToken},
         options: Options(
           headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -65,7 +63,6 @@ class AuthInterceptor extends Interceptor {
         final accessToken = data['access'] as String;
         final refreshToken = data['refresh'] as String;
 
-        // Save new tokens
         final tokenStorage = AuthTokenStorage();
         await tokenStorage.saveTokens(
           accessToken: accessToken,
@@ -74,26 +71,23 @@ class AuthInterceptor extends Interceptor {
           username: await AuthTokenStorage().getUsername(),
         );
 
-        // Retry original request with new token
         err.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
-        final retryResponse = await Dio().fetch(err.requestOptions);
+        final retryResponse = await _dio.fetch(err.requestOptions);
         handler.resolve(retryResponse);
 
-        // Process queued requests with new token
         _processQueue(accessToken);
       } else {
-        // Refresh failed - clear tokens and fail
         final tokenStorage = AuthTokenStorage();
         await tokenStorage.clear();
         _failQueuedRequests(Exception('Token refresh failed'));
         handler.next(err);
       }
-} catch (e) {
-        final tokenStorage = AuthTokenStorage();
-        await tokenStorage.clear();
-        _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
-        handler.next(err);
-      } finally {
+    } catch (e) {
+      final tokenStorage = AuthTokenStorage();
+      await tokenStorage.clear();
+      _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
+      handler.next(err);
+    } finally {
       _isRefreshing = false;
     }
   }
@@ -106,7 +100,14 @@ class AuthInterceptor extends Interceptor {
       final response = await completer.future;
       handler.resolve(response);
     } catch (e) {
-      handler.next(e as DioException);
+      final dioErr = e is DioException
+          ? e
+          : DioException(
+              requestOptions: options,
+              type: DioExceptionType.unknown,
+              message: e.toString(),
+            );
+      handler.next(dioErr);
     }
   }
 
@@ -114,7 +115,7 @@ class AuthInterceptor extends Interceptor {
     for (final request in _requestQueue) {
       request.options.headers['Authorization'] = 'Bearer $newAccessToken';
       try {
-        final response = Dio().fetch(request.options);
+        final response = _dio.fetch(request.options);
         request.completer.complete(response);
       } catch (e) {
         request.completer.completeError(e);

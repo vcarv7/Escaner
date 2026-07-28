@@ -21,9 +21,8 @@ class ApiClient {
       },
     ));
 
-    // Auth interceptor must be added first to handle 401 before retry
     _dio.interceptors.addAll([
-      AuthInterceptor(AuthTokenStorage()),
+      AuthInterceptor(AuthTokenStorage(), _dio),
       _LoggingInterceptor(),
       _RetryInterceptor(),
     ]);
@@ -87,11 +86,10 @@ class _RetryInterceptor extends Interceptor {
 
     if (retryCount < maxRetries && _shouldRetry(err)) {
       final delay = Duration(seconds: 1 << retryCount);
-      // print('🔄 Retry ${retryCount + 1}/$maxRetries after ${delay.inSeconds}s');
       Future.delayed(delay, () async {
         err.requestOptions.extra['retryCount'] = retryCount + 1;
         try {
-          final dio = Dio();
+          final dio = ApiClient().dio;
           final response = await dio.fetch(err.requestOptions);
           handler.resolve(response);
         } catch (e) {

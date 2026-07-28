@@ -2,6 +2,7 @@ import '../../domain/repositories/persona_repository.dart';
 import '../../domain/entities/persona.dart';
 import '../datasources/persona_api_datasource.dart';
 import '../services/persona_cache_service.dart';
+import '../../core/errors/app_exception.dart';
 
 class PersonaRepositoryImpl implements PersonaRepository {
   final PersonaApiDatasource _apiDatasource;
@@ -26,7 +27,20 @@ class PersonaRepositoryImpl implements PersonaRepository {
       return _cachedPersonas!;
     }
 
-    return syncPersonas().then((_) => _cachedPersonas ?? []);
+    try {
+      return await syncPersonas().then((_) => _cachedPersonas ?? []);
+    } on AppException {
+      if (forceRefresh && _cachedPersonas != null && _cachedPersonas!.isNotEmpty) {
+        return _cachedPersonas!;
+      }
+      final diskCache = await _cacheService.loadCache();
+      if (diskCache.isNotEmpty) {
+        _cachedPersonas = diskCache;
+        _buildIndexes(diskCache);
+        return _cachedPersonas!;
+      }
+      rethrow;
+    }
   }
 
   @override
