@@ -1,11 +1,12 @@
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 import '../../presentation/providers/settings_provider.dart';
 
 class FilterService {
-  static List<ScanItem> aplicarFiltros(List<ScanItem> items, FiltroData filtro) {
-    return items.where((item) {
-      final fechaValida = filtro.fechaEnRango(item.scannedAt);
-      final mismoEvento = filtro.evento == null || item.evento == filtro.evento;
+  static List<ScanRecord> aplicarFiltros(List<ScanRecord> records, FiltroData filtro) {
+    return records.where((record) {
+      final fechaValida = filtro.fechaEnRango(record.scannedAt);
+      final mismoEvento = filtro.evento == null || 
+          record.eventos.any((e) => e.evento == filtro.evento);
       return fechaValida && mismoEvento;
     }).toList();
   }

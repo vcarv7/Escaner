@@ -75,6 +75,7 @@ class PersonaApiDatasource {
     final codigoSolapin = json['codigoSolapin']?.toString() ?? '';
     final solapin = json['solapin']?.toString() ?? '';
     final nombreCompleto = json['nombreCompleto']?.toString() ?? '';
+    final categoriaResidente = json['categoriaResidente'] as int? ?? 1;
 
     if (id == null || id.isEmpty || codigoSolapin.isEmpty) {
       return null;
@@ -85,6 +86,7 @@ class PersonaApiDatasource {
       codigoSolapin: codigoSolapin,
       solapin: solapin,
       nombreCompleto: nombreCompleto,
+      categoriaResidente: categoriaResidente,
     );
   }
 }

@@ -1,4 +1,4 @@
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 import '../constants/app_constants.dart';
 
 class ValidationUtils {

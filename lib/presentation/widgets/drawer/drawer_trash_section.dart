@@ -12,7 +12,7 @@ class DrawerTrashSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ScanProvider>(
       builder: (context, provider, _) {
-        final trashItems = provider.trashItems;
+        final trashItems = provider.trashRecords;
         final isEmpty = trashItems.isEmpty;
         final itemCount = trashItems.length;
 

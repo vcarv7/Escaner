@@ -1,16 +1,16 @@
 import 'dart:async';
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 
 class AutoDeleteNotification {
   final int itemsMovidosAPapelera;
   final int itemsEliminados;
-  final List<ScanItem> itemsRestantes;
-  final List<ScanItem> trashActualizada;
+  final List<ScanRecord> recordsRestantes;
+  final List<ScanRecord> trashActualizada;
 
   const AutoDeleteNotification({
     required this.itemsMovidosAPapelera,
     required this.itemsEliminados,
-    required this.itemsRestantes,
+    required this.recordsRestantes,
     required this.trashActualizada,
   });
 }
@@ -42,33 +42,29 @@ class AutoDeleteService {
     _iniciado = false;
   }
 
-  /// Revisa items y trash (pertenecientes al ScanProvider) y devuelve el
-  /// resultado de la limpieza. NO toca storage directamente: el provider
-  /// debe aplicar el resultado y persistir.
-  static AutoDeleteNotification revisar(
-    List<ScanItem> items,
-    List<ScanItem> trashItems,
+  static AutoDeleteNotification revisarScanRecords(
+    List<ScanRecord> records,
+    List<ScanRecord> trashRecords,
   ) {
     final ahora = DateTime.now();
 
-    final List<ScanItem> itemsRestantes = [];
-    final List<ScanItem> trashActualizada = List<ScanItem>.from(trashItems);
+    final List<ScanRecord> recordsRestantes = [];
+    final List<ScanRecord> trashActualizada = List<ScanRecord>.from(trashRecords);
     int itemsMovidos = 0;
     int itemsEliminados = 0;
 
-    for (final item in items) {
-      final dias = ahora.difference(item.scannedAt).inDays;
+    for (final record in records) {
+      final dias = ahora.difference(record.scannedAt).inDays;
       if (dias >= _diasHastaPapelera) {
-        // Evitar dup en trash (por code, case-insensitive).
         final yaEnTrash = trashActualizada.any(
-          (t) => t.code.toUpperCase() == item.code.toUpperCase(),
+          (t) => t.id == record.id,
         );
         if (!yaEnTrash) {
-          trashActualizada.add(item);
+          trashActualizada.add(record);
           itemsMovidos++;
         }
       } else {
-        itemsRestantes.add(item);
+        recordsRestantes.add(record);
       }
     }
 
@@ -81,7 +77,7 @@ class AutoDeleteService {
     return AutoDeleteNotification(
       itemsMovidosAPapelera: itemsMovidos,
       itemsEliminados: itemsEliminados,
-      itemsRestantes: itemsRestantes,
+      recordsRestantes: recordsRestantes,
       trashActualizada: trashActualizada,
     );
   }

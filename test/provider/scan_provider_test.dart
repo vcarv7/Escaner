@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:escaner_1/domain/entities/scan_item.dart';
+import 'package:escaner_1/domain/entities/scan_record.dart';
 import 'package:escaner_1/domain/entities/evento.dart';
 import 'package:escaner_1/domain/entities/persona.dart';
 
@@ -81,24 +81,21 @@ void main() {
       expect(notReservedStatus, equals(ScanStatus.notReserved));
     });
 
-    test('determineDuplicateStatus returns correct status', () {
+    test('determineDeniedStatus returns denied status', () {
       final personas = createTestPersonas();
 
       final persona = _findPersonaByCodigoSolapin('ABC001', personas);
-      final status = _determineDuplicateStatus(persona);
-      expect(status, equals(ScanStatus.duplicate));
-
-      final notReservedStatus = _determineDuplicateStatus(null);
-      expect(notReservedStatus, equals(ScanStatus.notReservedDuplicate));
+      final status = _determineDeniedStatus(persona);
+      expect(status, equals(ScanStatus.denied));
     });
   });
 
-  group('ScanItem Status Logic', () {
+  group('ScanRecord Status Logic', () {
     test('ScanStatus enum has correct values', () {
       expect(ScanStatus.reserved.index, equals(0));
       expect(ScanStatus.notReserved.index, equals(1));
-      expect(ScanStatus.duplicate.index, equals(2));
-      expect(ScanStatus.notReservedDuplicate.index, equals(3));
+      expect(ScanStatus.inactive.index, equals(2));
+      expect(ScanStatus.denied.index, equals(3));
     });
 
     test('Evento enum has correct values', () {
@@ -111,26 +108,29 @@ void main() {
   group('Pagination Logic', () {
     test('getItemsPage returns correct page of items', () {
       const pageSize = 50;
-      final items = List.generate(
+      final records = List.generate(
         100,
-        (i) => ScanItem(
+        (i) => ScanRecord(
+          id: 'id-$i',
           code: 'CODE$i',
           type: ScanType.solapine,
           scannedAt: DateTime.now(),
+          eventos: [],
+          status: ScanStatus.reserved,
         ),
       );
 
-      final page1 = _getItemsPage(items, 1, pageSize);
+      final page1 = _getItemsPage(records, 1, pageSize);
       expect(page1.length, equals(50));
       expect(page1.first.code, equals('CODE0'));
       expect(page1.last.code, equals('CODE49'));
 
-      final page2 = _getItemsPage(items, 2, pageSize);
+      final page2 = _getItemsPage(records, 2, pageSize);
       expect(page2.length, equals(50));
       expect(page2.first.code, equals('CODE50'));
       expect(page2.last.code, equals('CODE99'));
 
-      final page3 = _getItemsPage(items, 3, pageSize);
+      final page3 = _getItemsPage(records, 3, pageSize);
       expect(page3.length, equals(0));
     });
 
@@ -178,15 +178,15 @@ ScanStatus _determineStatus(Persona? persona) {
   return persona != null ? ScanStatus.reserved : ScanStatus.notReserved;
 }
 
-ScanStatus _determineDuplicateStatus(Persona? persona) {
-  return persona != null ? ScanStatus.duplicate : ScanStatus.notReservedDuplicate;
+ScanStatus _determineDeniedStatus(Persona? persona) {
+  return ScanStatus.denied;
 }
 
-List<ScanItem> _getItemsPage(List<ScanItem> items, int page, int pageSize) {
+List<ScanRecord> _getItemsPage(List<ScanRecord> records, int page, int pageSize) {
   final start = (page - 1) * pageSize;
   final end = start + pageSize;
-  if (start >= items.length) return [];
-  return items.sublist(start, end.clamp(0, items.length));
+  if (start >= records.length) return [];
+  return records.sublist(start, end.clamp(0, records.length));
 }
 
 bool _hasMoreData(int currentPage, int pageSize, int totalItems) {

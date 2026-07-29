@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/services/filter_service.dart';
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 import '../providers/scan_provider.dart';
 import '../providers/settings_provider.dart';
 import 'scan_item/scan_item_constants.dart';
-import 'scan_item/scan_item_card.dart';
+import 'scan_item/scan_record_card.dart';
 import 'common/empty_state.dart';
 
 class SolapinesList extends StatefulWidget {
@@ -37,7 +37,7 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   void _onScroll() {
-    final hasEnoughItems = widget.provider.items.length > 5;
+    final hasEnoughItems = widget.provider.records.length > 5;
     final shouldShowButton = hasEnoughItems && _scrollController.offset > 500;
 
     if (_showScrollTopButton != shouldShowButton) {
@@ -61,16 +61,16 @@ class _SolapinesListState extends State<SolapinesList> {
 
     return Consumer<ScanProvider>(
       builder: (context, provider, _) {
-        final allItems = provider.items;
-        final itemsFiltrados = FilterService.aplicarFiltros(allItems, filtro);
-        
-        final sortedItems = _ordenarItems(itemsFiltrados, orden);
-        
-        final solapineCount = sortedItems
-            .where((item) => item.type == ScanType.solapine)
+        final allRecords = provider.records;
+        final recordsFiltrados = FilterService.aplicarFiltros(allRecords, filtro);
+
+        final sortedRecords = _ordenarRecords(recordsFiltrados, orden);
+
+        final solapineCount = sortedRecords
+            .where((r) => r.type == ScanType.solapine)
             .length;
-        final tarjetaCount = sortedItems
-            .where((item) => item.type == ScanType.tarjeta)
+        final tarjetaCount = sortedRecords
+            .where((r) => r.type == ScanType.tarjeta)
             .length;
 
         return Stack(
@@ -80,10 +80,10 @@ class _SolapinesListState extends State<SolapinesList> {
               children: [
                 _buildHeader(context, solapineCount, tarjetaCount, orden),
                 _buildFiltroChips(context, filtro),
-                Expanded(child: _buildList(context, sortedItems)),
+                Expanded(child: _buildList(context, sortedRecords)),
               ],
             ),
-            if (_showScrollTopButton && sortedItems.length > 5)
+            if (_showScrollTopButton && sortedRecords.length > 5)
               Positioned(
                 bottom: 16,
                 right: 16,
@@ -102,8 +102,8 @@ class _SolapinesListState extends State<SolapinesList> {
     );
   }
 
-  List<ScanItem> _ordenarItems(List<ScanItem> items, OrdenScaneados orden) {
-    final sorted = List<ScanItem>.from(items);
+  List<ScanRecord> _ordenarRecords(List<ScanRecord> records, OrdenScaneados orden) {
+    final sorted = List<ScanRecord>.from(records);
     sorted.sort((a, b) => orden == OrdenScaneados.ascendente
         ? a.scannedAt.compareTo(b.scannedAt)
         : b.scannedAt.compareTo(a.scannedAt));
@@ -127,13 +127,13 @@ class _SolapinesListState extends State<SolapinesList> {
             label: 'Cambiar orden de escaneos',
             child: IconButton(
               icon: Icon(
-                orden == OrdenScaneados.descendente 
-                    ? Icons.arrow_downward 
+                orden == OrdenScaneados.descendente
+                    ? Icons.arrow_downward
                     : Icons.arrow_upward,
                 size: 20,
               ),
-              tooltip: orden == OrdenScaneados.descendente 
-                  ? 'Más recientes abajo' 
+              tooltip: orden == OrdenScaneados.descendente
+                  ? 'Más recientes abajo'
                   : 'Más recientes arriba',
               onPressed: () {
                 final nuevos = orden == OrdenScaneados.descendente
@@ -192,8 +192,8 @@ class _SolapinesListState extends State<SolapinesList> {
     );
   }
 
-  Widget _buildList(BuildContext context, List<ScanItem> items) {
-    if (items.isEmpty) {
+  Widget _buildList(BuildContext context, List<ScanRecord> records) {
+    if (records.isEmpty) {
       return const EmptyState(
         icon: Icons.qr_code_scanner,
         title: 'Sin resultados',
@@ -205,9 +205,9 @@ class _SolapinesListState extends State<SolapinesList> {
 
     return ListView.builder(
       controller: _scrollController,
-      itemCount: items.length,
+      itemCount: records.length,
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-      itemBuilder: (context, index) => ScanItemCard(item: items[index]),
+      itemBuilder: (context, index) => ScanRecordCard(record: records[index]),
     );
   }
 }

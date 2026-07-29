@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../data/services/auto_delete_service.dart';
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
 import '../providers/persona_provider.dart';
@@ -13,6 +13,7 @@ import '../widgets/solapines_list.dart';
 import '../widgets/home_app_bar.dart';
 import '../widgets/home_nav_bar.dart';
 import '../widgets/dialogs/add_manual_dialog.dart';
+import '../widgets/dialogs/puerta_selector_dialog.dart';
 import '../widgets/drawer/app_drawer.dart';
 import '../widgets/overlay/overlay_message.dart';
 import '../widgets/common/math_curve_loader.dart';
@@ -30,7 +31,7 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   StreamSubscription<AutoDeleteNotification>? _cleanupSubscription;
 
-@override
+  @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -68,64 +69,103 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _onItemScanned(String code) {
+  void _onItemScanned(String code) async {
     final eventoProvider = context.read<EventoProvider>();
+
     if (!eventoProvider.tieneEventoSeleccionado) {
-      OverlayMessage.error(context, 'Selecciona un evento primero');
+      eventoProvider.autoSeleccionarEvento();
+    }
+
+    if (!eventoProvider.tieneEventoSeleccionado) {
+      if (!mounted) return;
+      OverlayMessage.error(context, 'Selecciona un evento');
       return;
     }
+
+    final puerta = await PuertaSelectorDialog.show(context);
+    if (puerta == null) return;
+    if (!mounted) return;
+
     final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
+
     if (!ValidationUtils.isValidCode(code)) {
-      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
+      if (!mounted) return;
+      OverlayMessage.error(context, 'Solapín inválido');
       return;
     }
-    final isNew = provider.addItemFromScanner(code, eventoProvider.eventoActual!, personaProvider);
+
+    final isNew = provider.processScan(
+      code,
+      eventoProvider.eventoActual!,
+      puerta,
+      personaProvider,
+    );
+
+    _showScanFeedback(code, isNew, provider);
+  }
+
+  void _showScanFeedback(String code, bool isNew, ScanProvider provider) {
+    if (!mounted) return;
+
     if (isNew) {
       context.read<SettingsProvider>().triggerScanFeedback();
-      final item = provider.items.last;
+      final item = provider.records.last;
       if (item.status == ScanStatus.reserved) {
-        OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
+        final categoria = item.categoriaResidente == 1 ? 'Interno' : 'Externo';
+        OverlayMessage.success(context, '${item.personaNombre} - $categoria');
+      } else if (item.status == ScanStatus.inactive) {
+        OverlayMessage.warning(context, 'Usuario Inactivo');
       } else {
-        OverlayMessage.warning(context, 'Solapín no encontrado en lista');
+        OverlayMessage.warning(context, 'No encontrado en lista');
       }
     } else {
-      if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
-        OverlayMessage.error(context, 'No reservado y duplicado');
+      final item = provider.records.firstWhere(
+        (r) => r.code.toUpperCase() == code.toUpperCase(),
+        orElse: () => provider.records.last,
+      );
+      if (item.status == ScanStatus.denied) {
+        OverlayMessage.error(context, 'Acceso Denegado');
       } else {
         OverlayMessage.error(context, 'Duplicado');
       }
     }
   }
 
-  void _addItemManually(String code) {
+  void _addItemManually(String code) async {
     final eventoProvider = context.read<EventoProvider>();
+
     if (!eventoProvider.tieneEventoSeleccionado) {
-      OverlayMessage.error(context, 'Selecciona un evento primero');
+      eventoProvider.autoSeleccionarEvento();
+    }
+
+    if (!eventoProvider.tieneEventoSeleccionado) {
+      if (!mounted) return;
+      OverlayMessage.error(context, 'Selecciona un evento');
       return;
     }
+
+    final puerta = await PuertaSelectorDialog.show(context);
+    if (puerta == null) return;
+    if (!mounted) return;
+
     final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
+
     if (!ValidationUtils.isValidCode(code)) {
-      OverlayMessage.error(context, ValidationUtils.validateCode(code) ?? 'Solapín inválido');
+      if (!mounted) return;
+      OverlayMessage.error(context, 'Solapín inválido');
       return;
     }
-    final isNew = provider.addItemManual(code, eventoProvider.eventoActual!, personaProvider);
-    if (isNew) {
-      context.read<SettingsProvider>().triggerScanFeedback();
-      final item = provider.items.last;
-      if (item.status == ScanStatus.reserved) {
-        OverlayMessage.success(context, '${item.personaNombre} - Solapín ${item.personaSolapine}');
-      } else {
-        OverlayMessage.warning(context, 'Solapín no encontrado en lista');
-      }
-    } else {
-      if (provider.items.any((i) => i.code.toUpperCase() == code.toUpperCase() && i.status == ScanStatus.notReservedDuplicate)) {
-        OverlayMessage.error(context, 'No reservado y duplicado');
-      } else {
-        OverlayMessage.error(context, 'Duplicado');
-      }
-    }
+
+    final isNew = provider.processScan(
+      code,
+      eventoProvider.eventoActual!,
+      puerta,
+      personaProvider,
+    );
+
+    _showScanFeedback(code, isNew, provider);
   }
 
   void _showAddManualDialog() => AddManualDialog.show(context, _addItemManually);
@@ -136,7 +176,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final isLargeScreen = screenWidth > 600;
-        
+
         return Consumer<ScanProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading) {

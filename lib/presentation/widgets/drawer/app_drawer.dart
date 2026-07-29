@@ -26,7 +26,7 @@ class _AppDrawerState extends State<AppDrawer> {
     final scanProvider = context.read<ScanProvider>();
     final settings = context.read<SettingsProvider>();
     final filtro = settings.filtro;
-    final itemsFiltrados = FilterService.aplicarFiltros(scanProvider.items, filtro);
+    final itemsFiltrados = FilterService.aplicarFiltros(scanProvider.records, filtro);
 
     if (itemsFiltrados.isEmpty) {
       if (!mounted) return;
