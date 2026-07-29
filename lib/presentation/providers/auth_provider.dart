@@ -38,6 +38,13 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final rememberMe = await _tokenStorage.getRememberMe();
+      if (!rememberMe) {
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
       final isValid = await _tokenStorage.isTokenValid();
       if (!isValid) {
         final refreshToken = await _tokenStorage.getRefreshToken();
@@ -79,7 +86,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String username, String password, {CancelToken? cancelToken}) async {
+  Future<bool> login(String username, String password, {bool rememberMe = false, CancelToken? cancelToken}) async {
     if (username.trim().isEmpty || password.trim().isEmpty) {
       _error = 'Usuario y contraseña son requeridos';
       notifyListeners();
@@ -94,6 +101,15 @@ class AuthProvider extends ChangeNotifier {
       await _authApi.login(username.trim(), password, cancelToken: cancelToken);
       _isAuthenticated = true;
       _username = username.trim();
+
+      if (rememberMe) {
+        await _tokenStorage.savePassword(password);
+        await _tokenStorage.saveRememberMe(true);
+      } else {
+        await _tokenStorage.clearPassword();
+        await _tokenStorage.saveRememberMe(false);
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;

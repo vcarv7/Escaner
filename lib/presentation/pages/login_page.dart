@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'dart:async';
 import '../providers/auth_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
+import '../../data/services/auth_token_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,6 +22,39 @@ class _LoginPageState extends State<LoginPage> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   CancelToken? _loginCancelToken;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    final tokenStorage = AuthTokenStorage();
+    final username = await tokenStorage.getUsername();
+    final rememberMe = await tokenStorage.getRememberMe();
+    
+    if (!mounted) return;
+    
+    setState(() {
+      if (username != null) {
+        _usernameController.text = username;
+      }
+      _rememberMe = rememberMe;
+      if (rememberMe) {
+        _loadSavedPassword();
+      }
+    });
+  }
+
+  Future<void> _loadSavedPassword() async {
+    final tokenStorage = AuthTokenStorage();
+    final password = await tokenStorage.getPassword();
+    if (!mounted) return;
+    if (password != null) {
+      _passwordController.text = password;
+    }
+  }
 
   @override
   void dispose() {
@@ -47,6 +81,7 @@ class _LoginPageState extends State<LoginPage> {
       success = await authProvider.login(
         _usernameController.text.trim(),
         _passwordController.text,
+        rememberMe: _rememberMe,
         cancelToken: _loginCancelToken,
       ).timeout(
         const Duration(seconds: 15),
@@ -241,14 +276,24 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildRememberMe() {
-    return Row(
-      children: [
-        Checkbox(
-          value: _rememberMe,
-          onChanged: (value) => setState(() => _rememberMe = value ?? false),
+    return Semantics(
+      label: 'Recordarme - mantener sesión iniciada',
+      child: InkWell(
+        onTap: () => setState(() => _rememberMe = !_rememberMe),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Checkbox(
+                value: _rememberMe,
+                onChanged: (value) => setState(() => _rememberMe = value ?? false),
+              ),
+              const Text('Recordarme'),
+            ],
+          ),
         ),
-        const Text('Recordarme'),
-      ],
+      ),
     );
   }
 

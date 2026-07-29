@@ -7,6 +7,8 @@ class AuthTokenStorage {
   static const _keyExpiresAt = 'token_expires_at';
   static const _keyUsername = 'username';
   static const _keyUserData = 'user_data';
+  static const _keyPassword = 'password';
+  static const _keyRememberMe = 'remember_me';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -57,6 +59,27 @@ class AuthTokenStorage {
     return DateTime.now().isBefore(expiresAt.subtract(const Duration(minutes: 1)));
   }
 
+  Future<void> savePassword(String password) async {
+    await _storage.write(key: _keyPassword, value: password);
+  }
+
+  Future<String?> getPassword() async {
+    return _storage.read(key: _keyPassword);
+  }
+
+  Future<void> clearPassword() async {
+    await _storage.delete(key: _keyPassword);
+  }
+
+  Future<void> saveRememberMe(bool value) async {
+    await _storage.write(key: _keyRememberMe, value: value.toString());
+  }
+
+  Future<bool> getRememberMe() async {
+    final value = await _storage.read(key: _keyRememberMe);
+    return value == 'true';
+  }
+
   Future<void> clear() async {
     await Future.wait([
       _storage.delete(key: _keyAccessToken),
@@ -64,6 +87,8 @@ class AuthTokenStorage {
       _storage.delete(key: _keyExpiresAt),
       _storage.delete(key: _keyUsername),
       _storage.delete(key: _keyUserData),
+      _storage.delete(key: _keyPassword),
+      _storage.delete(key: _keyRememberMe),
     ]);
   }
 }

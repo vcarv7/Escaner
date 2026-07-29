@@ -152,6 +152,13 @@ class PersonaProvider extends ChangeNotifier {
     return _byCodigoSolapin[lower] ?? _bySolapin[lower];
   }
 
+  bool get isCacheStale {
+    if (_lastSync == null) return true;
+    final now = DateTime.now();
+    final difference = now.difference(_lastSync!);
+    return difference.inDays > 30;
+  }
+
   void _buildIndexes(List<Persona> personas) {
     _byCodigoSolapin = {};
     _bySolapin = {};

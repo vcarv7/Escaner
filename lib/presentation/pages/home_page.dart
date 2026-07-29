@@ -8,6 +8,7 @@ import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
 import '../providers/persona_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/puerta_provider.dart';
 import '../widgets/scanner/scanner_widget.dart';
 import '../widgets/solapines_list.dart';
 import '../widgets/home_app_bar.dart';
@@ -82,9 +83,17 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final puerta = await PuertaSelectorDialog.show(context);
-    if (puerta == null) return;
-    if (!mounted) return;
+    final puertaProvider = context.read<PuertaProvider>();
+    String? puerta;
+
+    if (puertaProvider.tienePuertaSeleccionada) {
+      puerta = puertaProvider.puertaSeleccionada;
+    } else {
+      puerta = await PuertaSelectorDialog.show(context);
+      if (puerta == null) return;
+      if (!mounted) return;
+      puertaProvider.seleccionarPuerta(puerta);
+    }
 
     final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
@@ -145,9 +154,17 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    final puerta = await PuertaSelectorDialog.show(context);
-    if (puerta == null) return;
-    if (!mounted) return;
+    final puertaProvider = context.read<PuertaProvider>();
+    String? puerta;
+
+    if (puertaProvider.tienePuertaSeleccionada) {
+      puerta = puertaProvider.puertaSeleccionada;
+    } else {
+      puerta = await PuertaSelectorDialog.show(context);
+      if (puerta == null) return;
+      if (!mounted) return;
+      puertaProvider.seleccionarPuerta(puerta);
+    }
 
     final personaProvider = context.read<PersonaProvider>();
     final provider = context.read<ScanProvider>();
@@ -190,6 +207,9 @@ class _HomePageState extends State<HomePage> {
               );
             }
 
+            final personaProvider = context.watch<PersonaProvider>();
+            final isCacheStale = personaProvider.isCacheStale && personaProvider.hasPersonas;
+
             return Scaffold(
               key: _scaffoldKey,
               appBar: HomeAppBar(
@@ -197,49 +217,71 @@ class _HomePageState extends State<HomePage> {
                 showActions: _selectedIndex == 0,
               ),
               drawer: const AppDrawer(),
-              body: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0.05, 0),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOut,
-                      )),
-                      child: child,
-                    ),
-                  );
-                },
-                child: _selectedIndex == 0
-                    ? Column(
-                        key: const ValueKey(0),
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isLargeScreen ? 32 : screenWidth * 0.03,
-                              vertical: 8,
-                            ),
-                            child: ScannerWidget(
-                              onSolapineScanned: _onItemScanned,
-                            ),
-                          ),
-                          Expanded(
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: isLargeScreen ? 800 : double.infinity,
+              body: Stack(
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.05, 0),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOut,
+                          )),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: _selectedIndex == 0
+                        ? Column(
+                            key: const ValueKey(0),
+                            children: [
+                              if (isCacheStale)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  color: Colors.orange.shade100,
+                                  child: Semantics(
+                                    label: 'Datos en caché pueden estar desactualizados',
+                                    child: Text(
+                                      'Datos en caché pueden estar desactualizados',
+                                      style: TextStyle(
+                                        color: Colors.orange.shade800,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ),
-                                child: SolapinesList(provider: provider),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isLargeScreen ? 32 : screenWidth * 0.03,
+                                  vertical: 8,
+                                ),
+                                child: ScannerWidget(
+                                  onSolapineScanned: _onItemScanned,
+                                ),
                               ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SettingsPage(key: ValueKey(1)),
+                              Expanded(
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: isLargeScreen ? 800 : double.infinity,
+                                    ),
+                                    child: SolapinesList(provider: provider),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : const SettingsPage(key: ValueKey(1)),
+                  ),
+                ],
               ),
               floatingActionButton: _selectedIndex == 0
                   ? Semantics(

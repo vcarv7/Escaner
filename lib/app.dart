@@ -6,7 +6,9 @@ import 'presentation/providers/settings_provider.dart';
 import 'presentation/providers/evento_provider.dart';
 import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/persona_provider.dart';
+import 'presentation/providers/puerta_provider.dart';
 import 'presentation/pages/home_page.dart';
+import 'presentation/pages/login_page.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -19,7 +21,8 @@ class App extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SettingsProvider()..init()),
         ChangeNotifierProvider(create: (_) => EventoProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PersonaProvider()),
+        ChangeNotifierProvider(create: (_) => PersonaProvider()..init()),
+        ChangeNotifierProvider(create: (_) => PuertaProvider()),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
@@ -29,7 +32,21 @@ class App extends StatelessWidget {
             darkTheme: AppTheme.getTheme(true),
             themeMode: settings.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
             debugShowCheckedModeBanner: false,
-            home: const HomePage(),
+            home: Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                if (auth.isLoading) {
+                  return Scaffold(
+                    body: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
+                }
+                if (auth.isAuthenticated) {
+                  return const HomePage();
+                }
+                return const LoginPage();
+              },
+            ),
           );
         },
       ),

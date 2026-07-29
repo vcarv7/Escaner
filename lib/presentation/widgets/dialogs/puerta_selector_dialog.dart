@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import '../../../domain/entities/puerta.dart';
 
 class PuertaSelectorDialog extends StatefulWidget {
-  const PuertaSelectorDialog({super.key});
+  final String? initialPuerta;
 
-  static Future<String?> show(BuildContext context) async {
+  const PuertaSelectorDialog({super.key, this.initialPuerta});
+
+  static Future<String?> show(BuildContext context, {String? initialPuerta}) async {
     return showDialog<String>(
       context: context,
       barrierDismissible: true,
-      builder: (context) => const PuertaSelectorDialog(),
+      builder: (context) => PuertaSelectorDialog(initialPuerta: initialPuerta),
     );
   }
 
@@ -19,6 +21,17 @@ class PuertaSelectorDialog extends StatefulWidget {
 class _PuertaSelectorDialogState extends State<PuertaSelectorDialog> {
   String? _puertaSeleccionada;
   String? _comedorSeleccionado;
+
+  @override
+  void initState() {
+    super.initState();
+    _puertaSeleccionada = widget.initialPuerta;
+    if (_puertaSeleccionada != null) {
+      _comedorSeleccionado = PuertaService.puertas
+          .firstWhere((p) => p.numero == _puertaSeleccionada)
+          .comedor;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
