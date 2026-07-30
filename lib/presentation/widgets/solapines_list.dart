@@ -149,7 +149,7 @@ class _SolapinesListState extends State<SolapinesList> {
   }
 
   Widget _buildFiltroChips(BuildContext context, FiltroData filtro) {
-    if (filtro.evento == null && filtro.tipoRangoEffective == TipoRangoFecha.unico) {
+    if (filtro.evento == null && filtro.tipoRangoEffective == TipoRangoFecha.unico && filtro.puerta == null) {
       return const SizedBox.shrink();
     }
 
@@ -184,6 +184,18 @@ class _SolapinesListState extends State<SolapinesList> {
               onDeleted: () {
                 context.read<SettingsProvider>().setFiltro(
                   filtro.copyWith(evento: null),
+                );
+              },
+            ),
+          if (filtro.puerta != null)
+            Chip(
+              label: Text(
+                'Puerta ${filtro.puerta}',
+                style: const TextStyle(fontSize: 12),
+              ),
+              onDeleted: () {
+                context.read<SettingsProvider>().setFiltro(
+                  filtro.copyWith(puerta: null),
                 );
               },
             ),

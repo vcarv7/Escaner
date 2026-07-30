@@ -64,10 +64,15 @@ class ScanProvider extends ChangeNotifier {
     if (!_isValidCode(codeNormalized)) return false;
 
     final persona = personaProvider.findPersona(codeNormalized);
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
 
+    // CASO A: Verificar duplicado por código + evento + MISMA FECHA (día)
     final existingIndex = _records.indexWhere(
       (r) => r.code.toUpperCase() == codeNormalized &&
-             r.eventos.any((e) => e.evento == evento)
+             r.eventos.any((e) => e.evento == evento &&
+                 e.timestamp.isAfter(todayStart) && e.timestamp.isBefore(todayEnd))
     );
 
     if (existingIndex != -1) {
@@ -85,6 +90,7 @@ class ScanProvider extends ChangeNotifier {
       return false;
     }
 
+    // Buscar si el código ya existe (para agregar evento a record existente)
     final sameCodeIndex = _records.indexWhere(
       (r) => r.code.toUpperCase() == codeNormalized
     );
@@ -103,11 +109,12 @@ class ScanProvider extends ChangeNotifier {
       return true;
     }
 
+    // CASO C: Código nuevo - determinar status
     ScanStatus status;
     if (persona != null) {
       status = ScanStatus.reserved;
     } else {
-      status = ScanStatus.notReserved;
+      status = ScanStatus.inactive; // CASO C: solapín inactivo
     }
 
     _records.add(ScanRecord(

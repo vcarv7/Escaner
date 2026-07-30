@@ -26,6 +26,7 @@ class FiltroData {
   final DateTime? fechaInicio;
   final DateTime? fechaFin;
   final Evento? evento;
+  final String? puerta;
 
   FiltroData({
     required this.fecha,
@@ -34,9 +35,10 @@ class FiltroData {
     this.fechaInicio,
     this.fechaFin,
     this.evento,
+    this.puerta,
   });
 
-  // El patrón sentinel permite poner evento/fechaInicio/fechaFin a null.
+  // El patrón sentinel permite poner evento/fechaInicio/fechaFin/puerta a null.
   // Usar `filtro.copyWith(evento: null)` ahora SÍ anula el campo.
   FiltroData copyWith({
     DateTime? fecha,
@@ -45,6 +47,7 @@ class FiltroData {
     Object? fechaInicio = _sentinel,
     Object? fechaFin = _sentinel,
     Object? evento = _sentinel,
+    Object? puerta = _sentinel,
   }) {
     return FiltroData(
       fecha: fecha ?? this.fecha,
@@ -57,6 +60,7 @@ class FiltroData {
           ? this.fechaFin
           : fechaFin as DateTime?,
       evento: identical(evento, _sentinel) ? this.evento : evento as Evento?,
+      puerta: identical(puerta, _sentinel) ? this.puerta : puerta as String?,
     );
   }
 
@@ -143,6 +147,13 @@ class SettingsProvider extends ChangeNotifier {
   static const _keyDarkTheme = 'is_dark_theme';
   static const _keyScanFeedback = 'scan_feedback';
   static const _keyOrdenScaneados = 'orden_scaneados';
+  static const _keyFiltroTipoRango = 'filtro_tipo_rango';
+  static const _keyFiltroPredefinido = 'filtro_predefinido';
+  static const _keyFiltroFecha = 'filtro_fecha';
+  static const _keyFiltroFechaInicio = 'filtro_fecha_inicio';
+  static const _keyFiltroFechaFin = 'filtro_fecha_fin';
+  static const _keyFiltroEvento = 'filtro_evento';
+  static const _keyFiltroPuerta = 'filtro_puerta';
 
   bool _isDarkTheme = false;
   ScanFeedback _scanFeedback = ScanFeedback.none;
@@ -162,6 +173,26 @@ class SettingsProvider extends ChangeNotifier {
     _scanFeedback = ScanFeedback.values[feedbackIndex.clamp(0, 2)];
     final ordenIndex = prefs.getInt(_keyOrdenScaneados) ?? 1;
     _ordenScaneados = OrdenScaneados.values[ordenIndex.clamp(0, 1)];
+
+    // Cargar filtro guardado
+    final tipoRangoIndex = prefs.getInt(_keyFiltroTipoRango) ?? 0;
+    final predefinidoIndex = prefs.getInt(_keyFiltroPredefinido) ?? 0;
+    final fechaMillis = prefs.getInt(_keyFiltroFecha);
+    final fechaInicioMillis = prefs.getInt(_keyFiltroFechaInicio);
+    final fechaFinMillis = prefs.getInt(_keyFiltroFechaFin);
+    final eventoIndex = prefs.getInt(_keyFiltroEvento);
+    final puerta = prefs.getString(_keyFiltroPuerta);
+
+    _filtro = FiltroData(
+      fecha: fechaMillis != null ? DateTime.fromMillisecondsSinceEpoch(fechaMillis) : DateTime.now(),
+      tipoRango: TipoRangoFecha.values[tipoRangoIndex.clamp(0, 2)],
+      predefinido: RangoPredefinido.values[predefinidoIndex.clamp(0, 5)],
+      fechaInicio: fechaInicioMillis != null ? DateTime.fromMillisecondsSinceEpoch(fechaInicioMillis) : null,
+      fechaFin: fechaFinMillis != null ? DateTime.fromMillisecondsSinceEpoch(fechaFinMillis) : null,
+      evento: eventoIndex != null ? Evento.values[eventoIndex.clamp(0, Evento.values.length - 1)] : null,
+      puerta: puerta,
+    );
+
     notifyListeners();
   }
 
@@ -179,8 +210,16 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFiltro(FiltroData filtro) {
+  void setFiltro(FiltroData filtro) async {
     _filtro = filtro;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyFiltroTipoRango, filtro.tipoRango.index);
+    await prefs.setInt(_keyFiltroPredefinido, filtro.predefinido.index);
+    await prefs.setInt(_keyFiltroFecha, filtro.fecha.millisecondsSinceEpoch);
+    await prefs.setInt(_keyFiltroFechaInicio, filtro.fechaInicio?.millisecondsSinceEpoch ?? 0);
+    await prefs.setInt(_keyFiltroFechaFin, filtro.fechaFin?.millisecondsSinceEpoch ?? 0);
+    await prefs.setInt(_keyFiltroEvento, filtro.evento?.index ?? -1);
+    await prefs.setString(_keyFiltroPuerta, filtro.puerta ?? '');
     notifyListeners();
   }
 

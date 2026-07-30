@@ -8,7 +8,6 @@ import 'presentation/providers/auth_provider.dart';
 import 'presentation/providers/persona_provider.dart';
 import 'presentation/providers/puerta_provider.dart';
 import 'presentation/pages/home_page.dart';
-import 'presentation/pages/login_page.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -32,21 +31,7 @@ class App extends StatelessWidget {
             darkTheme: AppTheme.getTheme(true),
             themeMode: settings.isDarkTheme ? ThemeMode.dark : ThemeMode.light,
             debugShowCheckedModeBanner: false,
-            home: Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                if (auth.isLoading) {
-                  return Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-                if (auth.isAuthenticated) {
-                  return const HomePage();
-                }
-                return const LoginPage();
-              },
-            ),
+            home: const HomePage(),
           );
         },
       ),

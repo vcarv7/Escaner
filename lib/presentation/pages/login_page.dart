@@ -107,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
         context,
         'Bienvenido, ${_usernameController.text}',
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
       String errorMessage = authProvider.error ?? 'Error al iniciar sesión';
       if (timeoutMessage != null) {

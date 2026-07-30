@@ -38,46 +38,45 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final rememberMe = await _tokenStorage.getRememberMe();
-      if (!rememberMe) {
-        _isLoading = false;
-        notifyListeners();
-        return false;
+      final isValid = await _tokenStorage.isTokenValid();
+      if (isValid) {
+        final accessToken = await _tokenStorage.getAccessToken();
+        if (accessToken != null) {
+          try {
+            final verified = await _authApi.verifyToken(accessToken);
+            if (verified) {
+              _isAuthenticated = true;
+              _username = await _tokenStorage.getUsername();
+              _isLoading = false;
+              notifyListeners();
+              return true;
+            }
+          } catch (e) {
+            // Si falla verifyToken por red, intentar con refresh token
+          }
+        }
       }
 
-      final isValid = await _tokenStorage.isTokenValid();
-      if (!isValid) {
-        final refreshToken = await _tokenStorage.getRefreshToken();
-        if (refreshToken != null) {
+      final refreshToken = await _tokenStorage.getRefreshToken();
+      if (refreshToken != null) {
+        try {
           await _authApi.refreshToken();
           _isAuthenticated = true;
           _username = await _tokenStorage.getUsername();
           _isLoading = false;
           notifyListeners();
           return true;
-        }
-      } else {
-        final accessToken = await _tokenStorage.getAccessToken();
-        if (accessToken != null) {
-          final verified = await _authApi.verifyToken(accessToken);
-          if (verified) {
-            _isAuthenticated = true;
-            _username = await _tokenStorage.getUsername();
-            _isLoading = false;
-            notifyListeners();
-            return true;
-          }
+        } catch (e) {
+          await _tokenStorage.clear();
         }
       }
 
-      await _tokenStorage.clear();
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
-      await _tokenStorage.clear();
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
