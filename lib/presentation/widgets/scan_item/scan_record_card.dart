@@ -67,7 +67,7 @@ class ScanRecordCard extends StatelessWidget {
     final statusText = _statusLabel();
     final categoriaText = record.categoriaResidente == 1 ? 'Interno' : 'Externo';
     final eventosText = record.eventos.map((e) => e.evento.displayName).join(', ');
-    return '${record.personaNombre ?? "No reservado"}, solapín ${record.personaSolapine ?? record.code}, $categoriaText, $eventosText, $statusText';
+    return '${record.personaNombre ?? statusText}, solapín ${record.personaSolapine ?? record.code}, $categoriaText, $eventosText, $statusText';
   }
 
   Widget _buildNombre() {
@@ -89,8 +89,12 @@ class ScanRecordCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final label = record.status == ScanStatus.inactive
+        ? 'Usuario Inactivo'
+        : 'No Reservado';
+
     return Text(
-      'No Reservado',
+      label,
       style: TextStyle(
         fontSize: ScanItemConstants.nombreFontSize,
         fontWeight: FontWeight.w600,
