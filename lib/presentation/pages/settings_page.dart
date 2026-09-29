@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/theme/app_theme.dart';
 import '../providers/settings_provider.dart';
 import '../providers/persona_provider.dart';
 import '../providers/auth_provider.dart';
@@ -15,29 +16,34 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       body: Consumer3<SettingsProvider, PersonaProvider, AuthProvider>(
         builder: (context, settings, personaProvider, auth, _) {
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildSectionTitle('SINCRONIZACIÓN', colorScheme),
-              const SizedBox(height: 8),
-              _buildSyncCard(context, personaProvider, colorScheme),
-              const SizedBox(height: 24),
-              _buildSectionTitle('APARIENCIA', colorScheme),
-              const SizedBox(height: 8),
-              _buildThemeCard(settings, colorScheme),
-              const SizedBox(height: 24),
-              _buildSectionTitle('AL ESCANEAR', colorScheme),
-              const SizedBox(height: 8),
-              _buildFeedbackCard(settings, colorScheme),
-              const SizedBox(height: 24),
-              _buildSectionTitle('CUENTA', colorScheme),
-              const SizedBox(height: 8),
-              _buildAccountCard(context, auth, colorScheme),
-              const SizedBox(height: 24),
-              _buildSectionTitle('ACERCA DE', colorScheme),
-              const SizedBox(height: 8),
-              _buildAboutCard(colorScheme),
-            ],
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildSectionTitle('SINCRONIZACIÓN', colorScheme),
+                  const SizedBox(height: 8),
+                  _buildSyncCard(context, personaProvider, colorScheme),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('APARIENCIA', colorScheme),
+                  const SizedBox(height: 8),
+                  _buildThemeCard(settings, colorScheme),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('AL ESCANEAR', colorScheme),
+                  const SizedBox(height: 8),
+                  _buildFeedbackCard(settings, colorScheme),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('CUENTA', colorScheme),
+                  const SizedBox(height: 8),
+                  _buildAccountCard(context, auth, colorScheme),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('ACERCA DE', colorScheme),
+                  const SizedBox(height: 8),
+                  _buildAboutCard(colorScheme),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -65,22 +71,22 @@ class SettingsPage extends StatelessWidget {
     if (personaProvider.error != null) {
       final errorMsg = personaProvider.error!.toLowerCase();
       if (errorMsg.contains('tiempo') || errorMsg.contains('timeout')) {
-        errorColor = Colors.orange.shade700;
+        errorColor = AppTheme.warning;
         errorIcon = Icons.access_time;
       } else if (errorMsg.contains('conexión') || errorMsg.contains('sin conexión') || errorMsg.contains('red')) {
-        errorColor = Colors.red.shade700;
+        errorColor = colorScheme.error;
         errorIcon = Icons.wifi_off;
       } else if (errorMsg.contains('servidor') || errorMsg.contains('500')) {
-        errorColor = Colors.red.shade700;
+        errorColor = colorScheme.error;
         errorIcon = Icons.error_outline;
       } else if (errorMsg.contains('no autorizado') || errorMsg.contains('sesión expirada')) {
-        errorColor = Colors.orange.shade700;
+        errorColor = AppTheme.warning;
         errorIcon = Icons.lock_outline;
       } else if (errorMsg.contains('acceso denegado')) {
-        errorColor = Colors.red.shade700;
+        errorColor = colorScheme.error;
         errorIcon = Icons.block;
       } else {
-        errorColor = Colors.red.shade700;
+        errorColor = colorScheme.error;
         errorIcon = Icons.error_outline;
       }
     }
@@ -288,8 +294,8 @@ class SettingsPage extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  foregroundColor: Colors.red.shade700,
-                  side: BorderSide(color: Colors.red.shade700),
+                  foregroundColor: colorScheme.error,
+                  side: BorderSide(color: colorScheme.error),
                 ),
               ),
             ),
@@ -312,7 +318,10 @@ class SettingsPage extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             child: const Text('Cerrar sesión'),
           ),
         ],

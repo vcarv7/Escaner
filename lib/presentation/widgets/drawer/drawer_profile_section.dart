@@ -82,34 +82,19 @@ class DrawerProfileSection extends StatelessWidget {
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
-              const SizedBox(height: DrawerConstants.spacingMedium),
               if (isInitializing)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              else if (isAuthenticated)
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await context.read<AuthProvider>().logout();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Sesión cerrada')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Cerrar sesión'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: BorderSide(color: Colors.red.shade700),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(DrawerConstants.smallRadius),
+                const Padding(
+                  padding: EdgeInsets.only(top: DrawerConstants.spacingMedium),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
                 )
-              else
+              else if (!isAuthenticated) ...[
+                const SizedBox(height: DrawerConstants.spacingMedium),
                 FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -128,6 +113,7 @@ class DrawerProfileSection extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         );
