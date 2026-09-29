@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../data/services/auto_delete_service.dart';
+import '../../data/services/session_events.dart';
 import '../../domain/entities/scan_record.dart';
 import '../providers/scan_provider.dart';
 import '../providers/evento_provider.dart';
@@ -31,6 +32,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   StreamSubscription<AutoDeleteNotification>? _cleanupSubscription;
+  StreamSubscription<void>? _sessionExpiredSubscription;
 
   @override
   void initState() {
@@ -38,12 +40,14 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ScanProvider>().init();
       _escucharLimpieza();
+      _escucharSesion();
     });
   }
 
   @override
   void dispose() {
     _cleanupSubscription?.cancel();
+    _sessionExpiredSubscription?.cancel();
     super.dispose();
   }
 
@@ -67,6 +71,14 @@ class _HomePageState extends State<HomePage> {
           duration: const Duration(seconds: 4),
         ),
       );
+    });
+  }
+
+  void _escucharSesion() {
+    _sessionExpiredSubscription = SessionEvents.instance.onExpired.listen((_) {
+      if (!mounted) return;
+      unawaited(context.read<PersonaProvider>().clearSession());
+      OverlayMessage.warning(context, 'Tu sesión expiró. Inicia sesión nuevamente.');
     });
   }
 

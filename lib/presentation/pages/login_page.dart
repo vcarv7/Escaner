@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:dio/dio.dart';
 import 'dart:async';
 import '../providers/auth_provider.dart';
+import '../providers/persona_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
 import '../../data/services/auth_token_storage.dart';
 
@@ -91,6 +92,7 @@ class _LoginPageState extends State<LoginPage> {
     if (!mounted) return;
 
     if (success) {
+      unawaited(context.read<PersonaProvider>().loadFromCache());
       OverlayMessage.success(
         context,
         'Bienvenido, ${_usernameController.text}',

@@ -115,6 +115,23 @@ class PersonaProvider extends ChangeNotifier {
     }
   }
 
+  /// Vacía la lista de personas en memoria (tanto en el provider como en el
+  /// repositorio) sin tocar la caché en disco, para que un cambio de usuario
+  /// no vea los datos del anterior. Al volver a iniciar sesión, `loadFromCache()`
+  /// los recupera del disco.
+  Future<void> clearSession() async {
+    _personas = [];
+    _byCodigoSolapin = {};
+    _bySolapin = {};
+    _totalCount = 0;
+    _lastSync = null;
+    _error = null;
+    _isLoading = false;
+    _isSyncing = false;
+    notifyListeners();
+    await _repository.clearSession();
+  }
+
   String _mapError(Object error) {
     if (error is AppException) {
       return error.message;

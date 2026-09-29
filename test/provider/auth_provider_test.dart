@@ -5,6 +5,7 @@ import 'package:escaner_1/presentation/providers/auth_provider.dart';
 import 'package:escaner_1/data/datasources/auth_api_datasource.dart';
 import 'package:escaner_1/data/services/auth_token_storage.dart';
 import 'package:escaner_1/core/errors/app_exception.dart';
+import 'package:escaner_1/data/services/session_events.dart';
 import 'package:dio/dio.dart';
 
 import 'auth_provider_test.mocks.dart';
@@ -245,6 +246,78 @@ test('éxito: guarda tokens, setea autenticado', () async {
         await authProvider.logout();
 
         expect(notifyCount, greaterThanOrEqualTo(1));
+      });
+    });
+
+    group('sesión expirada', () {
+      Future<void> autenticar() async {
+        when(mockTokenStorage.isTokenValid()).thenAnswer((_) async => true);
+        when(mockTokenStorage.getAccessToken()).thenAnswer((_) async => 'valid_token');
+        when(mockAuthApi.verifyToken('valid_token')).thenAnswer((_) async => true);
+        when(mockTokenStorage.getUsername()).thenAnswer((_) async => 'testuser');
+        await authProvider.tryAutoLogin();
+      }
+
+      test('desloguea al recibir el evento del interceptor', () async {
+        await autenticar();
+        expect(authProvider.isAuthenticated, isTrue);
+
+        SessionEvents.instance.notifyExpired();
+        await pumpEventQueue();
+
+        expect(authProvider.isAuthenticated, isFalse);
+        expect(authProvider.username, isNull);
+        expect(authProvider.error, contains('expiró'));
+      });
+
+      test('notifica a listeners al recibir el evento', () async {
+        await autenticar();
+
+        int notifyCount = 0;
+        authProvider.addListener(() => notifyCount++);
+
+        SessionEvents.instance.notifyExpired();
+        await pumpEventQueue();
+
+        expect(notifyCount, greaterThanOrEqualTo(1));
+      });
+
+      test('login() posterior limpia el mensaje de sesión expirada', () async {
+        await autenticar();
+
+        SessionEvents.instance.notifyExpired();
+        await pumpEventQueue();
+        expect(authProvider.error, isNotNull);
+
+        final mockTokens = MockAuthTokens();
+        when(mockTokens.accessToken).thenReturn('access_token');
+        when(mockTokens.refreshToken).thenReturn('refresh_token');
+        when(mockTokens.expiresIn).thenReturn(3600);
+        when(mockTokens.tokenType).thenReturn('Bearer');
+        when(mockTokens.user).thenReturn({'username': 'test_user'});
+        when(mockAuthApi.login('user', 'pass', cancelToken: anyNamed('cancelToken')))
+            .thenAnswer((_) async => mockTokens);
+
+        final result = await authProvider.login('user', 'pass');
+
+        expect(result, isTrue);
+        expect(authProvider.error, isNull);
+        expect(authProvider.isAuthenticated, isTrue);
+      });
+
+      test('logout() no dispara el evento de sesión expirada', () async {
+        await autenticar();
+
+        var expirations = 0;
+        final sub = SessionEvents.instance.onExpired.listen((_) => expirations++);
+        when(mockTokenStorage.clear()).thenAnswer((_) async {});
+
+        await authProvider.logout();
+        await pumpEventQueue();
+
+        expect(expirations, 0);
+        expect(authProvider.isAuthenticated, isFalse);
+        await sub.cancel();
       });
     });
 

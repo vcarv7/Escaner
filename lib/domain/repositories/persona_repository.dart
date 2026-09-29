@@ -20,4 +20,8 @@ abstract class PersonaRepository {
   Future<Persona?> findByCodigoSolapin(String codigo);
   Future<Persona?> findBySolapin(String solapin);
   Future<bool> hasCache();
+
+  /// Descarta las personas retenidas en memoria sin borrar la caché en disco,
+  /// para que no queden visibles tras un cambio de usuario.
+  Future<void> clearSession();
 }

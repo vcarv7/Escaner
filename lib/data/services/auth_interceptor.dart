@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../services/auth_token_storage.dart';
+import '../services/session_events.dart';
 
 class AuthInterceptor extends Interceptor {
   final AuthTokenStorage _tokenStorage;
@@ -44,7 +45,7 @@ class AuthInterceptor extends Interceptor {
     try {
       final refreshToken = await _tokenStorage.getRefreshToken();
       if (refreshToken == null) {
-        await _tokenStorage.clear();
+        await _clearSession();
         _failQueuedRequests(Exception('No refresh token'));
         handler.next(err);
         return;
@@ -74,9 +75,9 @@ class AuthInterceptor extends Interceptor {
         final retryResponse = await _dio.fetch(err.requestOptions);
         handler.resolve(retryResponse);
 
-        _processQueue(accessToken);
+        await _processQueue(accessToken);
       } else {
-        await _tokenStorage.clear();
+        await _clearSession();
         _failQueuedRequests(Exception('Token refresh failed'));
         handler.next(err);
       }
@@ -91,13 +92,20 @@ class AuthInterceptor extends Interceptor {
         _failQueuedRequests(e);
         handler.next(err);
       } else {
-        await _tokenStorage.clear();
+        await _clearSession();
         _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
         handler.next(err);
       }
     } finally {
       _isRefreshing = false;
     }
+  }
+
+  /// Limpia los tokens y avisa a la capa de presentación para que AuthProvider
+  /// sincronice su estado en vez de quedar desincronizado.
+  Future<void> _clearSession() async {
+    await _tokenStorage.clear();
+    SessionEvents.instance.notifyExpired();
   }
 
   Future<void> _queueRequest(RequestOptions options, ErrorInterceptorHandler handler) async {
@@ -119,17 +127,18 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  void _processQueue(String newAccessToken) {
-    for (final request in _requestQueue) {
+  Future<void> _processQueue(String newAccessToken) async {
+    final pending = List<_QueuedRequest>.from(_requestQueue);
+    _requestQueue.clear();
+    for (final request in pending) {
       request.options.headers['Authorization'] = 'Bearer $newAccessToken';
       try {
-        final response = _dio.fetch(request.options);
+        final response = await _dio.fetch(request.options);
         request.completer.complete(response);
       } catch (e) {
         request.completer.completeError(e);
       }
     }
-    _requestQueue.clear();
   }
 
   void _failQueuedRequests(Exception error) {

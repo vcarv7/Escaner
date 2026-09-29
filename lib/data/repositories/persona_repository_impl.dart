@@ -80,6 +80,13 @@ class PersonaRepositoryImpl implements PersonaRepository {
     return cache.isNotEmpty;
   }
 
+  @override
+  Future<void> clearSession() async {
+    _cachedPersonas = null;
+    _byCodigoSolapin = null;
+    _bySolapin = null;
+  }
+
   Future<void> _ensureLoaded() async {
     if (_cachedPersonas == null || _cachedPersonas!.isEmpty) {
       await getAllPersonas();

@@ -4,11 +4,13 @@ import 'dart:async';
 import '../../data/datasources/auth_api_datasource.dart';
 import '../../data/services/auth_token_storage.dart';
 import '../../data/services/api_client.dart';
+import '../../data/services/session_events.dart';
 import '../../core/errors/app_exception.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthApiDatasource _authApi;
   final AuthTokenStorage _tokenStorage;
+  StreamSubscription<void>? _sessionExpiredSub;
 
   String? _username;
   bool _isAuthenticated = false;
@@ -27,7 +29,24 @@ class AuthProvider extends ChangeNotifier {
     AuthTokenStorage? tokenStorage,
   })  : _tokenStorage = tokenStorage ?? AuthTokenStorage(),
         _authApi = authApi ?? AuthApiDatasource(ApiClient(), AuthTokenStorage()) {
+    _sessionExpiredSub = SessionEvents.instance.onExpired.listen((_) => _onSessionExpired());
     _init();
+  }
+
+  @override
+  void dispose() {
+    _sessionExpiredSub?.cancel();
+    _sessionExpiredSub = null;
+    super.dispose();
+  }
+
+  /// El interceptor limpió los tokens por un 401 no recuperable: el estado en
+  /// memoria debe seguir al almacenamiento para que la UI no quede desincronizada.
+  void _onSessionExpired() {
+    _isAuthenticated = false;
+    _username = null;
+    _error = 'Tu sesión expiró. Inicia sesión nuevamente.';
+    notifyListeners();
   }
 
   Future<void> _init() async {
