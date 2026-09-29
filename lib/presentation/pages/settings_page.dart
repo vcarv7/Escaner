@@ -83,6 +83,9 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildSyncCard(BuildContext context, PersonaProvider personaProvider, ColorScheme colorScheme) {
+    // La sincronización es la ÚNICA operación que exige sesión: es la única que
+    // habla con el servidor. El escaneo es local y sigue funcionando sin token.
+    final haySesion = context.watch<AuthProvider>().isAuthenticated;
     Color? errorColor;
     IconData? errorIcon;
 
@@ -123,7 +126,7 @@ class SettingsPage extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               key: const ValueKey('settings_sync_button'),
-              onPressed: personaProvider.isSyncing
+              onPressed: (personaProvider.isSyncing || !haySesion)
                   ? null
                   : () async {
                       final success = await personaProvider.syncPersonas();
@@ -144,13 +147,29 @@ class SettingsPage extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.sync_rounded),
-              label: Text(personaProvider.isSyncing ? 'Sincronizando...' : 'Sincronizar ahora'),
+              label: Text(
+                personaProvider.isSyncing
+                    ? 'Sincronizando...'
+                    : haySesion
+                        ? 'Sincronizar ahora'
+                        : 'Inicia sesión para sincronizar',
+              ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ),
+          if (!haySesion) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando.',
+              child: Text(
+                'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando con la lista local.',
+                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (personaProvider.lastSync != null) ...[
             _divider(colorScheme),

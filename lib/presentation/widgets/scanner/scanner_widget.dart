@@ -9,11 +9,13 @@ import '../common/math_curve_loader.dart';
 class ScannerWidget extends StatefulWidget {
   final void Function(String) onSolapineScanned;
   final bool enabled;
+  final String? disabledMessage;
 
   const ScannerWidget({
     super.key,
     required this.onSolapineScanned,
     this.enabled = true,
+    this.disabledMessage,
   });
 
   @override
@@ -32,6 +34,37 @@ class _ScannerWidgetState extends State<ScannerWidget> {
       detectionSpeed: DetectionSpeed.normal,
       facing: CameraFacing.back,
     );
+    if (!widget.enabled) unawaited(_setCameraActive(false));
+  }
+
+  @override
+  void didUpdateWidget(covariant ScannerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled == widget.enabled) return;
+    // Apagar la cámara, y no solo ignorar las detecciones, evita que el
+    // operador siga creyendo que el escáner está operativo.
+    unawaited(_setCameraActive(widget.enabled));
+    if (!widget.enabled) {
+      _cooldownTimer?.cancel();
+      // Sin setState: build() corre justo después de este método.
+      _isProcessing = false;
+    }
+  }
+
+  /// `start()`/`stop()` hablan con el canal de la plataforma y pueden fallar
+  /// si la cámara no está disponible (permisos, emulador, pruebas). Eso no debe
+  /// tumbar el escáner: la guarda de `enabled` en `_handleDetect` es la que
+  /// realmente decide si un código se procesa.
+  Future<void> _setCameraActive(bool active) async {
+    try {
+      if (active) {
+        await _controller.start();
+      } else {
+        await _controller.stop();
+      }
+    } catch (e) {
+      debugPrint('ScannerWidget: no se pudo ${active ? 'arrancar' : 'detener'} la cámara: $e');
+    }
   }
 
   @override
@@ -43,6 +76,7 @@ class _ScannerWidgetState extends State<ScannerWidget> {
 
   void _handleDetect(BarcodeCapture capture) {
     if (_isProcessing) return;
+    if (!widget.enabled) return;
 
     // Verificar barcodes ANTES de activar _isProcessing para evitar
     // que el escáner quede pausado permanentemente si llega una captura vacía.
@@ -102,6 +136,38 @@ class _ScannerWidgetState extends State<ScannerWidget> {
                 controller: _controller,
                 onDetect: _handleDetect,
               ),
+              if (!widget.enabled)
+                Container(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Center(
+                    child: Semantics(
+                      label: widget.disabledMessage ?? 'Escaneo deshabilitado',
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.videocam_off_outlined,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            widget.disabledMessage ?? 'Escaneo deshabilitado',
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               if (_isProcessing)
                 Container(
                   color: Colors.black.withValues(alpha: 0.5),
