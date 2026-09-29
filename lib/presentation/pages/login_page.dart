@@ -33,27 +33,15 @@ class _LoginPageState extends State<LoginPage> {
     final tokenStorage = AuthTokenStorage();
     final username = await tokenStorage.getUsername();
     final rememberMe = await tokenStorage.getRememberMe();
-    
+
     if (!mounted) return;
-    
+
     setState(() {
       if (username != null) {
         _usernameController.text = username;
       }
       _rememberMe = rememberMe;
-      if (rememberMe) {
-        _loadSavedPassword();
-      }
     });
-  }
-
-  Future<void> _loadSavedPassword() async {
-    final tokenStorage = AuthTokenStorage();
-    final password = await tokenStorage.getPassword();
-    if (!mounted) return;
-    if (password != null) {
-      _passwordController.text = password;
-    }
   }
 
   @override

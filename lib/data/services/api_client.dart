@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/app_logger.dart' as app_logger;
 import '../services/auth_interceptor.dart';
@@ -49,7 +50,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logRequest(options.method, options.uri, data: options.data);
     }
     handler.next(options);
@@ -57,7 +58,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logResponse(response.statusCode ?? 0, response.requestOptions.uri);
     }
     handler.next(response);
@@ -65,7 +66,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logError(err.requestOptions.uri, err);
     }
     handler.next(err);

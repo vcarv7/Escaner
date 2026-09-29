@@ -61,14 +61,13 @@ class AuthInterceptor extends Interceptor {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final accessToken = data['access'] as String;
-        final refreshToken = data['refresh'] as String;
+        final newRefreshToken = data['refresh'] as String;
 
-        final tokenStorage = AuthTokenStorage();
-        await tokenStorage.saveTokens(
+        await _tokenStorage.saveTokens(
           accessToken: accessToken,
-          refreshToken: refreshToken,
+          refreshToken: newRefreshToken,
           expiresInSeconds: data['expiresIn'] as int? ?? 3600,
-          username: await AuthTokenStorage().getUsername(),
+          username: await _tokenStorage.getUsername(),
         );
 
         err.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
@@ -77,16 +76,25 @@ class AuthInterceptor extends Interceptor {
 
         _processQueue(accessToken);
       } else {
-        final tokenStorage = AuthTokenStorage();
-        await tokenStorage.clear();
+        await _tokenStorage.clear();
         _failQueuedRequests(Exception('Token refresh failed'));
         handler.next(err);
       }
     } catch (e) {
-      final tokenStorage = AuthTokenStorage();
-      await tokenStorage.clear();
-      _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
-      handler.next(err);
+      if (e is DioException &&
+          (e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.unknown)) {
+        // Fallo de red: conservar tokens, no cerrar sesión
+        _failQueuedRequests(e);
+        handler.next(err);
+      } else {
+        await _tokenStorage.clear();
+        _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
+        handler.next(err);
+      }
     } finally {
       _isRefreshing = false;
     }

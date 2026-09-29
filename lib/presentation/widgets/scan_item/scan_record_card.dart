@@ -205,7 +205,8 @@ class ScanRecordCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge() {
-    if (record.status == ScanStatus.notReserved) {
+    if (record.status == ScanStatus.notReserved ||
+        record.status == ScanStatus.inactive) {
       return const SizedBox.shrink();
     }
 

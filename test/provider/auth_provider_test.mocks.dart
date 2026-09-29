@@ -162,26 +162,18 @@ class MockAuthTokenStorage extends _i1.Mock implements _i5.AuthTokenStorage {
           as _i3.Future<bool>);
 
   @override
-  _i3.Future<void> savePassword(String? password) =>
+  _i3.Future<void> saveUsername(String? username) =>
       (super.noSuchMethod(
-            Invocation.method(#savePassword, [password]),
+            Invocation.method(#saveUsername, [username]),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )
           as _i3.Future<void>);
 
   @override
-  _i3.Future<String?> getPassword() =>
+  _i3.Future<void> clearUsername() =>
       (super.noSuchMethod(
-            Invocation.method(#getPassword, []),
-            returnValue: _i3.Future<String?>.value(),
-          )
-          as _i3.Future<String?>);
-
-  @override
-  _i3.Future<void> clearPassword() =>
-      (super.noSuchMethod(
-            Invocation.method(#clearPassword, []),
+            Invocation.method(#clearUsername, []),
             returnValue: _i3.Future<void>.value(),
             returnValueForMissingStub: _i3.Future<void>.value(),
           )

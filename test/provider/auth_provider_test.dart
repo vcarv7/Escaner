@@ -69,7 +69,7 @@ void main() {
         verify(mockAuthApi.refreshToken()).called(1);
       });
 
-      test('devuelve false y limpia storage cuando refresh token falla', () async {
+      test('devuelve false y limpia storage cuando refresh token falla por sesión expirada', () async {
         when(mockTokenStorage.isTokenValid()).thenAnswer((_) async => false);
         when(mockTokenStorage.getRefreshToken()).thenAnswer((_) async => 'invalid_refresh');
         when(mockAuthApi.refreshToken()).thenThrow(AppException(
@@ -83,6 +83,22 @@ void main() {
         expect(authProvider.isAuthenticated, isFalse);
         expect(authProvider.username, isNull);
         verify(mockTokenStorage.clear()).called(1);
+      });
+
+      test('devuelve false y NO limpia storage cuando refresh token falla por red', () async {
+        when(mockTokenStorage.isTokenValid()).thenAnswer((_) async => false);
+        when(mockTokenStorage.getRefreshToken()).thenAnswer((_) async => 'refresh_token');
+        when(mockAuthApi.refreshToken()).thenThrow(
+          DioException(requestOptions: RequestOptions(path: '/'), type: DioExceptionType.connectionError)
+        );
+
+        final result = await authProvider.tryAutoLogin();
+
+        expect(result, isFalse);
+        expect(authProvider.isAuthenticated, isFalse);
+        expect(authProvider.username, isNull);
+        // No debe limpiar storage si es error de red
+        verifyNever(mockTokenStorage.clear());
       });
 
       test('devuelve false cuando no hay tokens guardados', () async {
@@ -256,6 +272,15 @@ test('éxito: guarda tokens, setea autenticado', () async {
         await future;
         
         expect(authProvider.isLoading, isFalse);
+      });
+
+      test('isInitializing pasa a false después de terminar tryAutoLogin', () async {
+        when(mockTokenStorage.isTokenValid()).thenAnswer((_) async => false);
+        when(mockTokenStorage.getRefreshToken()).thenAnswer((_) async => null);
+
+        await authProvider.tryAutoLogin();
+
+        expect(authProvider.isInitializing, isFalse);
       });
     });
 

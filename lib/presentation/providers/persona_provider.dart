@@ -10,6 +10,7 @@ import '../../core/errors/app_exception.dart';
 
 class PersonaProvider extends ChangeNotifier {
   final PersonaRepository _repository;
+  final PersonaCacheService _cacheService;
 
   List<Persona> _personas = [];
   Map<String, Persona> _byCodigoSolapin = {};
@@ -28,11 +29,12 @@ class PersonaProvider extends ChangeNotifier {
   int get totalCount => _totalCount;
   bool get hasPersonas => _personas.isNotEmpty;
 
-  PersonaProvider({PersonaRepository? repository})
+  PersonaProvider({PersonaRepository? repository, PersonaCacheService? cacheService})
       : _repository = repository ?? PersonaRepositoryImpl(
           PersonaApiDatasource(ApiClient()),
           PersonaCacheService(),
-        );
+        ),
+        _cacheService = cacheService ?? PersonaCacheService();
 
   Future<void> init() async {
     if (_personas.isNotEmpty) return;
@@ -50,7 +52,7 @@ class PersonaProvider extends ChangeNotifier {
       _totalCount = _personas.length;
       final hasCache = await _repository.hasCache();
       if (hasCache) {
-        final meta = await PersonaCacheService().loadMeta();
+        final meta = await _cacheService.loadMeta();
         _lastSync = meta?.lastSync;
       }
     } on AppException catch (e) {

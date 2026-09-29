@@ -16,9 +16,14 @@ class DrawerProfileSection extends StatelessWidget {
 
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
+        final isInitializing = auth.isInitializing;
         final isAuthenticated = auth.isAuthenticated;
         final userName = auth.username ?? 'Invitado';
-        final userEmail = isAuthenticated ? 'Sesión activa' : 'Inicia sesión para sincronizar';
+        final userEmail = isInitializing
+            ? 'Verificando sesión...'
+            : isAuthenticated
+                ? 'Sesión activa'
+                : 'Inicia sesión para sincronizar';
 
         return Container(
           width: double.infinity,
@@ -78,7 +83,13 @@ class DrawerProfileSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: DrawerConstants.spacingMedium),
-              if (isAuthenticated)
+              if (isInitializing)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else if (isAuthenticated)
                 OutlinedButton.icon(
                   onPressed: () async {
                     await context.read<AuthProvider>().logout();

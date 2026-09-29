@@ -13,18 +13,20 @@ class AuthProvider extends ChangeNotifier {
   String? _username;
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  bool _isInitializing = true;
   String? _error;
 
   String? get username => _username;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  bool get isInitializing => _isInitializing;
   String? get error => _error;
 
   AuthProvider({
     AuthApiDatasource? authApi,
     AuthTokenStorage? tokenStorage,
-  })  : _authApi = authApi ?? AuthApiDatasource(ApiClient(), AuthTokenStorage()),
-        _tokenStorage = tokenStorage ?? AuthTokenStorage() {
+  })  : _tokenStorage = tokenStorage ?? AuthTokenStorage(),
+        _authApi = authApi ?? AuthApiDatasource(ApiClient(), AuthTokenStorage()) {
     _init();
   }
 
@@ -67,7 +69,9 @@ class AuthProvider extends ChangeNotifier {
           notifyListeners();
           return true;
         } catch (e) {
-          await _tokenStorage.clear();
+          if (_isAuthError(e)) {
+            await _tokenStorage.clear();
+          }
         }
       }
 
@@ -82,8 +86,14 @@ class AuthProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    } finally {
+      _isInitializing = false;
     }
   }
+
+  bool _isAuthError(Object e) =>
+      e is AppException &&
+      (e.type == AppErrorType.unauthorized || e.type == AppErrorType.forbidden);
 
   Future<bool> login(String username, String password, {bool rememberMe = false, CancelToken? cancelToken}) async {
     if (username.trim().isEmpty || password.trim().isEmpty) {
@@ -102,10 +112,10 @@ class AuthProvider extends ChangeNotifier {
       _username = username.trim();
 
       if (rememberMe) {
-        await _tokenStorage.savePassword(password);
+        await _tokenStorage.saveUsername(username.trim());
         await _tokenStorage.saveRememberMe(true);
       } else {
-        await _tokenStorage.clearPassword();
+        await _tokenStorage.clearUsername();
         await _tokenStorage.saveRememberMe(false);
       }
 
