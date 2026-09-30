@@ -29,6 +29,12 @@ class AppException implements Exception {
           message: 'Sin conexión. Verifica tu red.',
           technicalMessage: e.message,
         );
+      case DioExceptionType.badCertificate:
+        return AppException(
+          type: AppErrorType.badCertificate,
+          message: 'El certificado del servidor no es confiable en esta red',
+          technicalMessage: e.message,
+        );
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         if (statusCode != null) {

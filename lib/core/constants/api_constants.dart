@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://alimentacion-preview.din.uci.cu/';
+  static const String baseUrl = 'https://10.11.2.55/';
   static const String authLogin = '/api/v1/auth/token/';
   static const String authRefresh = '/api/v1/auth/token/refresh/';
   static const String authVerify = '/api/v1/auth/token/verify/';

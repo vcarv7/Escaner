@@ -12,6 +12,7 @@ class OverlayMessage {
     String message,
     Color backgroundColor, {
     Duration? duration,
+    String? technicalDetail,
   }) {
     final overlay = Overlay.of(context);
 
@@ -22,6 +23,7 @@ class OverlayMessage {
         backgroundColor: backgroundColor,
         duration: duration ?? defaultDuration,
         onDismiss: () => entry.remove(),
+        technicalDetail: technicalDetail,
       ),
     );
 
@@ -36,8 +38,8 @@ class OverlayMessage {
     show(context, message, Colors.orange);
   }
 
-  static void error(BuildContext context, String message) {
-    show(context, message, Colors.red);
+  static void error(BuildContext context, String message, {String? technicalDetail}) {
+    show(context, message, Colors.red, technicalDetail: technicalDetail);
   }
 
   static void info(BuildContext context, String message) {
@@ -50,12 +52,14 @@ class _OverlayMessageWidget extends StatefulWidget {
   final Color backgroundColor;
   final Duration duration;
   final VoidCallback onDismiss;
+  final String? technicalDetail;
 
   const _OverlayMessageWidget({
     required this.message,
     required this.backgroundColor,
     required this.duration,
     required this.onDismiss,
+    this.technicalDetail,
   });
 
   @override
@@ -128,14 +132,56 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
                   horizontal: OverlayMessage.paddingH,
                   vertical: OverlayMessage.paddingV,
                 ),
-                child: Text(
-                  widget.message,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-                  textAlign: TextAlign.center,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      widget.message,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (widget.technicalDetail != null &&
+                        widget.technicalDetail!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.white54,
+                        ),
+                        child: ExpansionTile(
+                          tilePadding: EdgeInsets.zero,
+                          childrenPadding: const EdgeInsets.only(top: 8),
+                          title: const Text(
+                            'Detalle técnico',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          trailing: const Icon(
+                            Icons.expand_more,
+                            color: Colors.white70,
+                            size: 18,
+                          ),
+                          children: [
+                            SelectableText(
+                              widget.technicalDetail!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),

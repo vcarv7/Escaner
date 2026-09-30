@@ -17,12 +17,14 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitializing = true;
   String? _error;
+  String? _technicalError;
 
   String? get username => _username;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   bool get isInitializing => _isInitializing;
   String? get error => _error;
+  String? get technicalError => _technicalError;
 
   AuthProvider({
     AuthApiDatasource? authApi,
@@ -56,6 +58,8 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> tryAutoLogin() async {
     _isLoading = true;
+    _error = null;
+    _technicalError = null;
     notifyListeners();
 
     try {
@@ -103,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
+      _technicalError = null;
       notifyListeners();
       return false;
     } finally {
@@ -143,27 +148,38 @@ class AuthProvider extends ChangeNotifier {
       return true;
     } on AppException catch (e) {
       _error = _mapError(e);
+      _technicalError = e.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
       return false;
     } on TimeoutException catch (e) {
-      _error = _mapError(AppException.timeout(e.message));
+      final appEx = AppException.timeout(e.message);
+      _error = _mapError(appEx);
+      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
       return false;
     } on DioException catch (e) {
-      _error = _mapError(AppException.fromDioException(e));
+      final appEx = AppException.fromDioException(e);
+      _error = _mapError(appEx);
+      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
       return false;
     } catch (e) {
-      _error = _mapError(Exception(e.toString()));
+      final appEx = AppException(
+        type: AppErrorType.unknown,
+        message: 'Error: ${e.toString().replaceFirst('Exception: ', '')}',
+        technicalMessage: e.toString(),
+      );
+      _error = _mapError(appEx);
+      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -177,12 +193,16 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = false;
     _username = null;
     _error = null;
+    _technicalError = null;
     notifyListeners();
   }
 
   String _mapError(Object error) {
     if (error is AppException) {
       return error.message;
+    }
+    if (error is DioException) {
+      return AppException.fromDioException(error).message;
     }
     final msg = error.toString();
     if (msg.toLowerCase().contains('timeout')) {

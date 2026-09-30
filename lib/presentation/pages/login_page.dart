@@ -65,7 +65,6 @@ class _LoginPageState extends State<LoginPage> {
     final authProvider = context.read<AuthProvider>();
 
     bool success = false;
-    String? timeoutMessage;
 
     try {
       success = await authProvider.login(
@@ -73,22 +72,11 @@ class _LoginPageState extends State<LoginPage> {
         _passwordController.text,
         rememberMe: _rememberMe,
         cancelToken: _loginCancelToken,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          _loginCancelToken?.cancel();
-          timeoutMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
-          return false;
-        },
       );
-    } on TimeoutException {
+    } finally {
       _loginCancelToken?.cancel();
-      timeoutMessage = 'Tiempo de espera agotado. Verifica tu conexión.';
-    } catch (_) {
-      _loginCancelToken?.cancel();
+      _loginCancelToken = null;
     }
-
-    _loginCancelToken = null;
 
     if (!mounted) return;
 
@@ -100,13 +88,10 @@ class _LoginPageState extends State<LoginPage> {
       );
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
-      String errorMessage = authProvider.error ?? 'Error al iniciar sesión';
-      if (timeoutMessage != null) {
-        errorMessage = timeoutMessage!;
-      }
       OverlayMessage.error(
         context,
-        errorMessage,
+        authProvider.error ?? 'Error al iniciar sesión',
+        technicalDetail: authProvider.technicalError,
       );
     }
   }
