@@ -96,7 +96,7 @@ class AuthApiDatasource {
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                if (csrfToken != null) 'X-CSRFToken': csrfToken,
+                'X-CSRFToken': ?csrfToken,
               },
             ),
             cancelToken: cancelToken,
