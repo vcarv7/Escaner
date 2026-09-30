@@ -1,5 +1,14 @@
 class ApiConstants {
-  static const String baseUrl = 'https://10.11.2.55/';
+  /// Backend de preview.
+  ///
+  /// El nombre de dominio se usa para el certificado: la CA corporativa solo
+  /// puede avalar `alimentacion-preview.din.uci.cu`. La IP
+  /// (`10.11.2.55`) se aplica aparte, en `tls_trust_io.dart`, porque el DNS de
+  /// la red corporativa no resuelve los hosts internos.
+  static const String baseUrl = 'https://alimentacion-preview.din.uci.cu/';
+
+  /// IP del backend de preview. La resuelve `setPlatformAddress` al arrancar.
+  static const String previewAddress = '10.11.2.55';
   static const String authLogin = '/api/v1/auth/token/';
   static const String authRefresh = '/api/v1/auth/token/refresh/';
   static const String authVerify = '/api/v1/auth/token/verify/';

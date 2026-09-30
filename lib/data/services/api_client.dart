@@ -4,6 +4,7 @@ import '../../core/constants/api_constants.dart';
 import '../../core/utils/app_logger.dart' as app_logger;
 import '../services/auth_interceptor.dart';
 import '../services/auth_token_storage.dart';
+import '../services/tls/tls_trust.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -22,6 +23,16 @@ class ApiClient {
         'Accept': 'application/json',
       },
     ));
+
+    // La CA corporativa se registra desde initPlatformTls(). Sin esto el
+    // handshake falla con "unable to get local issuer certificate" porque estas
+    // peticiones salen por el BoringSSL de Dart, no por el stack de Android.
+    // createPlatformAdapter devuelve null en web o si no hay override, y en ese
+    // caso queda el adapter por defecto.
+    final adapter = createPlatformAdapter(ApiConstants.baseUrl);
+    if (adapter != null) {
+      _dio.httpClientAdapter = adapter;
+    }
 
     _dio.interceptors.addAll([
       AuthInterceptor(AuthTokenStorage(), _dio),

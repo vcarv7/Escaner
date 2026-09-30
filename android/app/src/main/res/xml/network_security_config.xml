@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  El backend se consume por IP (10.11.2.55). El matching de <domain> en
+  network-security-config es por hostname y no matchea IPs literales, asi que
+  un <domain-config> con la IP nunca cargaba el certificado y Android fallaba
+  el handshake con "unable to get local issuer certificate".
+
+  <base-config> si aplica a toda conexion, incluida la IP.
+
+  Esto no abre un boquete: el certificado tiene NameConstraints y solo puede
+  avalar alimentacion-preview.din.uci.cu y 10.11.2.55, nunca otro sitio.
+-->
 <network-security-config>
-    <domain-config>
-        <domain includeSubdomains="true">alimentacion-preview.din.uci.cu</domain>
-        <domain includeSubdomains="true">10.11.2.55</domain>
-        <certificates src="@raw/ca_corporativa"/>
-    </domain-config>
+    <base-config>
+        <certificates src="system" />
+        <certificates src="@raw/ca_corporativa" />
+    </base-config>
 </network-security-config>

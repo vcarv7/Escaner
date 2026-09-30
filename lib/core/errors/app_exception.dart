@@ -13,6 +13,33 @@ class AppException implements Exception {
     this.statusCode,
   });
 
+  /// Detalle técnico legible para diagnóstico.
+  ///
+  /// `DioException.message` llega vacío en varios tipos (sobre todo
+  /// `unknown`, que es justo el caso de un fallo de TLS en Android), y ahí el
+  /// operador se queda sin ninguna pista. La causa real suele estar en
+  /// `error` — la excepción que lanzó `dart:io` — así que se vuelca todo.
+  static String describeDio(DioException e) {
+    final buffer = StringBuffer()..writeln('tipo: ${e.type.name}');
+
+    if (e.message != null && e.message!.isNotEmpty) {
+      buffer.writeln('mensaje: ${e.message}');
+    }
+
+    final causa = e.error;
+    if (causa != null) {
+      buffer.writeln('causa: ${causa.runtimeType}');
+      buffer.writeln(causa.toString());
+    }
+
+    final status = e.response?.statusCode;
+    if (status != null) {
+      buffer.writeln('http: $status');
+    }
+
+    return buffer.toString().trim();
+  }
+
   factory AppException.fromDioException(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
@@ -21,47 +48,47 @@ class AppException implements Exception {
         return AppException(
           type: AppErrorType.timeout,
           message: 'Tiempo de espera agotado. Verifica tu conexión.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       case DioExceptionType.connectionError:
         return AppException(
           type: AppErrorType.noConnection,
           message: 'Sin conexión. Verifica tu red.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       case DioExceptionType.badCertificate:
         return AppException(
           type: AppErrorType.badCertificate,
           message: 'El certificado del servidor no es confiable en esta red',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         if (statusCode != null) {
-          return AppException.fromStatusCode(statusCode, e.message);
+          return AppException.fromStatusCode(statusCode, describeDio(e));
         }
         return AppException(
           type: AppErrorType.unknown,
           message: 'Error inesperado.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       case DioExceptionType.cancel:
         return AppException(
           type: AppErrorType.requestCancelled,
           message: 'Petición cancelada.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       case DioExceptionType.unknown:
         return AppException(
           type: AppErrorType.unknownNetwork,
           message: 'Error de red desconocido. Verifica tu conexión.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
       default:
         return AppException(
           type: AppErrorType.unknown,
           message: 'Error inesperado. Intenta más tarde.',
-          technicalMessage: e.message,
+          technicalMessage: describeDio(e),
         );
     }
   }

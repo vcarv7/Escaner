@@ -36,6 +36,7 @@ flutter:
   assets:
     - assets/images/
     - assets/sounds/
+    - assets/certs/
 
 flutter_launcher_icons:
   image_path: "assets/images/logo_icon.png"

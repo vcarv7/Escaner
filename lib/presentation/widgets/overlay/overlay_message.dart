@@ -38,7 +38,11 @@ class OverlayMessage {
     show(context, message, Colors.orange);
   }
 
-  static void error(BuildContext context, String message, {String? technicalDetail}) {
+  static void error(
+    BuildContext context,
+    String message, {
+    String? technicalDetail,
+  }) {
     show(context, message, Colors.red, technicalDetail: technicalDetail);
   }
 
@@ -86,9 +90,10 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, -1),
       end: Offset.zero,
@@ -96,11 +101,16 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
 
     _controller.forward();
 
-    Future.delayed(widget.duration, () {
-      if (mounted) {
-        _controller.reverse().then((_) => _dismiss());
-      }
-    });
+    // Con detalle técnico el aviso no se autoclosa: hay que darle tiempo a
+    // expandirlo y leerlo. Sin detalle mantiene los 2 s de siempre.
+    final detalle = widget.technicalDetail;
+    if (detalle == null || detalle.isEmpty) {
+      Future.delayed(widget.duration, () {
+        if (mounted) {
+          _controller.reverse().then((_) => _dismiss());
+        }
+      });
+    }
   }
 
   @override
@@ -132,56 +142,70 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
                   horizontal: OverlayMessage.paddingH,
                   vertical: OverlayMessage.paddingV,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      widget.message,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (widget.technicalDetail != null &&
-                        widget.technicalDetail!.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Theme(
-                        data: Theme.of(context).copyWith(
-                          dividerColor: Colors.white54,
+                child: GestureDetector(
+                  onTap: _dismiss,
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        widget.message,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
                         ),
-                        child: ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          childrenPadding: const EdgeInsets.only(top: 8),
-                          title: const Text(
-                            'Detalle técnico',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          trailing: const Icon(
-                            Icons.expand_more,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
-                          children: [
-                            SelectableText(
-                              widget.technicalDetail!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontFamily: 'monospace',
+                        textAlign: TextAlign.center,
+                      ),
+                      if (widget.technicalDetail != null &&
+                          widget.technicalDetail!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Theme(
+                          data: Theme.of(
+                            context,
+                          ).copyWith(dividerColor: Colors.white54),
+                          child: ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            childrenPadding: const EdgeInsets.only(top: 8),
+                            title: const Text(
+                              'Detalle técnico',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
+                            trailing: const Icon(
+                              Icons.expand_more,
+                              color: Colors.white70,
+                              size: 18,
+                            ),
+                            children: [
+                              SelectableText(
+                                widget.technicalDetail!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Tocá la notificación para cerrarla',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
