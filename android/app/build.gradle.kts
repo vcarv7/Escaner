@@ -71,7 +71,7 @@ android {
     applicationVariants.configureEach {
         outputs.configureEach {
             (this as? ApkVariantOutputImpl)?.outputFileName =
-                "SIGA-Escaner-${buildType.name}.apk"
+                "SIGA-${buildType.name}.apk"
         }
     }
 }

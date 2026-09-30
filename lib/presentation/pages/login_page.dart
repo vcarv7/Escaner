@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../providers/persona_provider.dart';
 import '../widgets/overlay/overlay_message.dart';
 import '../../data/services/auth_token_storage.dart';
+import '../../core/constants/app_constants.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -165,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 24),
         Text(
-          'SIGA Escaner',
+          AppConstants.appName,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.bold,
             color: colorScheme.onSurface,

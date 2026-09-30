@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
 import '../../data/services/auto_delete_service.dart';
 import '../../data/services/session_events.dart';
@@ -113,10 +114,7 @@ class _HomePageState extends State<HomePage> {
   bool _guardarCatalogoDisponible() {
     final personaProvider = context.read<PersonaProvider>();
     if (personaProvider.puedeEscanear) return true;
-    OverlayMessage.error(
-      context,
-      'No hay personas cargadas. Sincroniza antes de escanear.',
-    );
+    OverlayMessage.error(context, AppConstants.sinPersonasMensaje);
     return false;
   }
 
@@ -212,11 +210,11 @@ class _HomePageState extends State<HomePage> {
 
     final esError = status == PersonaListStatus.error;
     final mensaje = esError
-        ? (personaProvider.error ?? 'No se pudo cargar el catálogo de personas')
-        : 'No hay personas cargadas. Sincroniza antes de escanear.';
+        ? (personaProvider.error ?? 'No se pudieron cargar las Personas')
+        : AppConstants.sinPersonasMensaje;
     final semantica = esError
-        ? 'Error al cargar el catálogo: $mensaje'
-        : 'Escaneo bloqueado: no hay personas cargadas';
+        ? 'Error al cargar las Personas: $mensaje'
+        : 'Escaneo bloqueado: no hay Personas sincronizadas';
 
     return Container(
       key: const ValueKey('banner_catalogo'),
@@ -386,7 +384,7 @@ class _HomePageState extends State<HomePage> {
                                 child: ScannerWidget(
                                   onSolapineScanned: _onItemScanned,
                                   enabled: personaProvider.puedeEscanear,
-                                  disabledMessage: 'Sin catálogo: sincroniza primero',
+                                  disabledMessage: AppConstants.sinPersonasMensaje,
                                 ),
                               ),
                               Expanded(
