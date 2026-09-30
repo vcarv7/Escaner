@@ -62,7 +62,9 @@ class AuthInterceptor extends Interceptor {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final accessToken = data['access'] as String;
-        final newRefreshToken = data['refresh'] as String;
+        // El backend no rota el refresh y lo omite en la respuesta: conservar
+        // el que ya teníamos en lugar de sobrescribirlo con una cadena vacía.
+        final newRefreshToken = data['refresh'] as String? ?? refreshToken;
 
         await _tokenStorage.saveTokens(
           accessToken: accessToken,

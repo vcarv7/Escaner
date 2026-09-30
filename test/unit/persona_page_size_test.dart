@@ -40,6 +40,13 @@ void main() {
       expect(PersonaApiDatasource.calcularTotalPages(1001, 1000, 1000), 2);
       expect(PersonaApiDatasource.calcularTotalPages(1000, 1000, 1000), 1);
     });
+
+    test('no pide páginas inexistentes cuando el servidor devuelve todo en la primera', () {
+      // El servidor devolvió todo (`count` == registros recibidos) aunque pedimos
+      // 1000: creer que hay ceil(5941/1000)=6 páginas pediría la 2..6 y el API
+      // responde 404 fuera de rango (medido), tumbando la sincronización entera.
+      expect(PersonaApiDatasource.calcularTotalPages(5941, 5941, 1000), 1);
+    });
   });
 
   group('aplanarPaginas', () {

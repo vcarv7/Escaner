@@ -30,8 +30,9 @@ class PersonaApiDatasource {
 
   PersonaApiDatasource(this._apiClient);
 
-  /// Timeout por página. Una página de [ApiConstants.defaultPageSize] registros
-  /// tarda más que una chica, así que el margen es mayor que antes.
+  /// Timeout total por página. Dio ya corta en la conexión y en la recepción
+  /// con los timeouts de [ApiConstants]; este margen cubre el tiempo total de la
+  /// llamada, incluida la estancia en la cola del cliente de Dio.
   static const Duration _requestTimeout = Duration(seconds: 30);
 
   /// Descarga todas las personas en 3 fases:
@@ -83,6 +84,10 @@ class PersonaApiDatasource {
     int pageSizeSolicitado,
   ) {
     if (totalCount <= 0 || recibidosPrimeraPagina <= 0) return 1;
+
+    // El servidor devolvió todo de una (no pagina, o devuelve más de lo pedido):
+    // pedir páginas inexistentes devolvería 404 y tumbaría la sincronización.
+    if (recibidosPrimeraPagina >= totalCount) return 1;
 
     final effective = recibidosPrimeraPagina < pageSizeSolicitado ? recibidosPrimeraPagina : pageSizeSolicitado;
     return (totalCount / effective).ceil();
