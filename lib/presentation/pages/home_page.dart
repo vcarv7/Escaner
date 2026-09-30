@@ -120,7 +120,12 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  void _onItemScanned(String code) async {
+  void _onItemScanned(String code) => _registrarScan(code);
+
+  /// Compartido por el escáner y la entrada manual: catálogo → evento → puerta →
+  /// validación → registro → feedback. Antes esto estaba duplicado en dos
+  /// métodos casi idénticos que solo divergían en el origen del código.
+  Future<void> _registrarScan(String code) async {
     if (!_guardarCatalogoDisponible()) return;
 
     final eventoProvider = context.read<EventoProvider>();
@@ -169,9 +174,15 @@ class _HomePageState extends State<HomePage> {
   void _showScanFeedback(String code, bool isNew, ScanProvider provider) {
     if (!mounted) return;
 
+    // processScan siempre deja el registro del código recién escaneado, así que
+    // se resuelve por código. Usar `records.last` mostraba el nombre de OTRA
+    // persona cuando el solapín ya existía (los registros no se reordenan).
+    final item = provider.records.firstWhere(
+      (r) => r.code.toUpperCase() == code.toUpperCase(),
+    );
+
     if (isNew) {
       context.read<SettingsProvider>().triggerScanFeedback();
-      final item = provider.records.last;
       if (item.status == ScanStatus.reserved) {
         final categoria = item.categoriaResidente == 1 ? 'Interno' : 'Externo';
         OverlayMessage.success(context, '${item.personaNombre} - $categoria');
@@ -181,10 +192,6 @@ class _HomePageState extends State<HomePage> {
         OverlayMessage.warning(context, 'No encontrado en lista');
       }
     } else {
-      final item = provider.records.firstWhere(
-        (r) => r.code.toUpperCase() == code.toUpperCase(),
-        orElse: () => provider.records.last,
-      );
       if (item.status == ScanStatus.denied) {
         OverlayMessage.error(context, 'Acceso Denegado');
       } else {
@@ -193,53 +200,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _addItemManually(String code) async {
-    if (!_guardarCatalogoDisponible()) return;
-
-    final eventoProvider = context.read<EventoProvider>();
-
-    if (!eventoProvider.tieneEventoSeleccionado) {
-      eventoProvider.autoSeleccionarEvento();
-    }
-
-    if (!eventoProvider.tieneEventoSeleccionado) {
-      if (!mounted) return;
-      OverlayMessage.error(context, 'Selecciona un evento');
-      return;
-    }
-
-    final puertaProvider = context.read<PuertaProvider>();
-    String? puerta;
-
-    if (puertaProvider.tienePuertaSeleccionada) {
-      puerta = puertaProvider.puertaSeleccionada;
-    } else {
-      puerta = await PuertaSelectorDialog.show(context);
-      if (puerta == null) return;
-      if (!mounted) return;
-      puertaProvider.seleccionarPuerta(puerta);
-    }
-
-    final personaProvider = context.read<PersonaProvider>();
-    final provider = context.read<ScanProvider>();
-
-    if (!ValidationUtils.isValidCode(code)) {
-      if (!mounted) return;
-      OverlayMessage.error(context, 'Solapín inválido');
-      return;
-    }
-
-    final isNew = provider.processScan(
-      code,
-      eventoProvider.eventoActual!,
-      puerta,
-      personaProvider,
-    );
-
-    _showScanFeedback(code, isNew, provider);
-  }
-
-  void _showAddManualDialog() => AddManualDialog.show(context, _addItemManually);
+  void _showAddManualDialog() => AddManualDialog.show(context, _registrarScan);
 
   /// Banner crítico: sin catálogo el escaneo está bloqueado, porque
   /// `processScan` interpretaría cualquier solapín como "Usuario Inactivo".

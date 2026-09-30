@@ -147,14 +147,16 @@ class ScanRecordCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: record.eventos.map((eventoScan) {
+        final esDenegado = eventoScan.status == ScanStatus.denied;
+        final color = esDenegado ? Colors.red.shade700 : Theme.of(context).colorScheme.primary;
         return Padding(
           padding: const EdgeInsets.only(bottom: 4),
           child: Row(
             children: [
               Icon(
-                Icons.restaurant,
+                esDenegado ? Icons.block : Icons.restaurant,
                 size: 16,
-                color: Theme.of(context).colorScheme.primary,
+                color: color,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -162,12 +164,17 @@ class ScanRecordCard extends StatelessWidget {
                   eventoScan.evento.displayName,
                   style: TextStyle(
                     fontSize: ScanItemConstants.infoFontSize,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: color,
+                    decoration: esDenegado ? TextDecoration.lineThrough : null,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
               ),
+              if (esDenegado) ...[
+                const SizedBox(width: 6),
+                _buildDenegadoChip(),
+              ],
               if (eventoScan.puerta != null) ...[
                 const SizedBox(width: 8),
                 Icon(
@@ -188,6 +195,24 @@ class ScanRecordCard extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildDenegadoChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.red.shade100,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        'Denegado',
+        style: TextStyle(
+          fontSize: 11,
+          color: Colors.red.shade800,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 

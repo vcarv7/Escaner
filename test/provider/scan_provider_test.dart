@@ -1,194 +1,186 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:escaner_1/domain/entities/scan_record.dart';
+import 'package:mockito/mockito.dart';
 import 'package:escaner_1/domain/entities/evento.dart';
 import 'package:escaner_1/domain/entities/persona.dart';
+import 'package:escaner_1/domain/entities/scan_record.dart';
+import 'package:escaner_1/presentation/providers/persona_provider.dart';
+import 'package:escaner_1/presentation/providers/scan_provider.dart';
+
+import 'persona_provider_test.mocks.dart';
 
 void main() {
-  group('ScanProvider Logic Tests', () {
-    List<Persona> createTestPersonas() {
-      return const [
-        Persona(
-          idPersona: '1',
-          codigoSolapin: 'ABC001',
-          solapin: '001',
-          nombreCompleto: 'Juan Perez',
-        ),
-        Persona(
-          idPersona: '2',
-          codigoSolapin: 'ABC002',
-          solapin: '002',
-          nombreCompleto: 'Maria Garcia',
-        ),
-        Persona(
-          idPersona: '3',
-          codigoSolapin: 'ABC003',
-          solapin: '003',
-          nombreCompleto: 'Carlos Lopez',
-        ),
-      ];
-    }
+  late PersonaProvider personaProvider;
+  late ScanProvider scanProvider;
+  late DateTime hoy;
 
-    test('findPersonaByCodigoSolapin returns correct persona', () {
-      final personas = createTestPersonas();
-      final result = _findPersonaByCodigoSolapin('ABC001', personas);
-      expect(result?.nombreCompleto, equals('Juan Perez'));
+  setUp(() async {
+    final mockRepository = MockPersonaRepository();
+    final mockCacheService = MockPersonaCacheService();
+    personaProvider = PersonaProvider(
+      repository: mockRepository,
+      cacheService: mockCacheService,
+    );
+    when(mockRepository.getAllPersonas()).thenAnswer((_) async => const [
+          Persona(idPersona: '1', codigoSolapin: 'ABC001', solapin: '001',
+              nombreCompleto: 'Juan Perez'),
+        ]);
+    when(mockRepository.hasCache()).thenAnswer((_) async => true);
+    when(mockCacheService.loadMeta()).thenAnswer((_) async => null);
+    await personaProvider.loadFromCache();
+
+    scanProvider = ScanProvider();
+    hoy = DateTime.now();
+  });
+
+  tearDown(() {
+    personaProvider.dispose();
+    scanProvider.dispose();
+  });
+
+  ScanRecord? recordDe(String code) {
+    final matches = scanProvider.records
+        .where((r) => r.code.toUpperCase() == code.toUpperCase())
+        .toList();
+    return matches.isEmpty ? null : matches.last;
+  }
+
+  group('processScan - caso C (código nuevo)', () {
+    test('resuelve contra el catálogo local y queda reserved', () {
+      final isNew = scanProvider.processScan(
+          'ABC001', Evento.desayuno, '1', personaProvider);
+
+      expect(isNew, isTrue);
+      final record = recordDe('ABC001');
+      expect(record, isNotNull);
+      expect(record!.status, ScanStatus.reserved);
+      expect(record.personaNombre, 'Juan Perez');
+      expect(record.eventos.single.evento, Evento.desayuno);
+      expect(record.eventos.single.status, ScanStatus.reserved);
     });
 
-    test('findPersonaByCodigoSolapin returns null for non-existent code', () {
-      final personas = createTestPersonas();
-      final result = _findPersonaByCodigoSolapin('ABC999', personas);
-      expect(result, isNull);
+    test('código en minúsculas se normaliza y resuelve igual', () {
+      scanProvider.processScan('abc001', Evento.desayuno, null, personaProvider);
+
+      final record = recordDe('ABC001');
+      expect(record, isNotNull);
+      expect(record!.code, 'ABC001');
+      expect(record.status, ScanStatus.reserved);
     });
 
-    test('findPersonaByCodigoSolapin is case insensitive', () {
-      final personas = createTestPersonas();
-      final result = _findPersonaByCodigoSolapin('abc001', personas);
-      expect(result?.nombreCompleto, equals('Juan Perez'));
+    test('código desconocido queda inactive', () {
+      final isNew = scanProvider.processScan(
+          'XYZ999', Evento.almuerzo, null, personaProvider);
+
+      expect(isNew, isTrue);
+      final record = recordDe('XYZ999');
+      expect(record!.status, ScanStatus.inactive);
+      expect(record.eventos.single.status, ScanStatus.inactive);
     });
 
-    test('findPersonaBySolapin returns correct persona', () {
-      final personas = createTestPersonas();
-      final result = _findPersonaBySolapin('001', personas);
-      expect(result?.nombreCompleto, equals('Juan Perez'));
-    });
+    test('código inválido (símbolos) no registra nada', () {
+      final isNew = scanProvider.processScan('!!!!!', Evento.desayuno, null, personaProvider);
 
-    test('findPersonaBySolapin returns null for non-existent solapin', () {
-      final personas = createTestPersonas();
-      final result = _findPersonaBySolapin('999', personas);
-      expect(result, isNull);
-    });
-
-    test('isValidCode returns true for valid codes', () {
-      expect(_isValidCode('ABC12'), isTrue);
-      expect(_isValidCode('12345'), isTrue);
-      expect(_isValidCode('ABCDEFG'), isTrue);
-    });
-
-    test('isValidCode returns false for invalid codes', () {
-      expect(_isValidCode(''), isFalse);
-      expect(_isValidCode('AB'), isFalse);
-      expect(_isValidCode('ABC1234567890123'), isFalse);
-    });
-
-    test('determineStatus returns correct status based on persona', () {
-      final personas = createTestPersonas();
-
-      final persona = _findPersonaByCodigoSolapin('ABC001', personas);
-      final status = _determineStatus(persona);
-      expect(status, equals(ScanStatus.reserved));
-
-      final notReservedStatus = _determineStatus(null);
-      expect(notReservedStatus, equals(ScanStatus.notReserved));
-    });
-
-    test('determineDeniedStatus returns denied status', () {
-      final personas = createTestPersonas();
-
-      final persona = _findPersonaByCodigoSolapin('ABC001', personas);
-      final status = _determineDeniedStatus(persona);
-      expect(status, equals(ScanStatus.denied));
+      expect(isNew, isFalse);
+      expect(scanProvider.records, isEmpty);
     });
   });
 
-  group('ScanRecord Status Logic', () {
-    test('ScanStatus enum has correct values', () {
-      expect(ScanStatus.reserved.index, equals(0));
-      expect(ScanStatus.notReserved.index, equals(1));
-      expect(ScanStatus.inactive.index, equals(2));
-      expect(ScanStatus.denied.index, equals(3));
-    });
+  group('processScan - caso A (duplicado mismo evento y día)', () {
+    test('queda denied para ese evento y el registro global refleja denied', () {
+      scanProvider.processScan('ABC001', Evento.desayuno, '1', personaProvider);
+      final isNew = scanProvider.processScan('ABC001', Evento.desayuno, '1', personaProvider);
 
-    test('Evento enum has correct values', () {
-      expect(Evento.values, contains(Evento.almuerzo));
-      expect(Evento.values, contains(Evento.desayuno));
-      expect(Evento.values, contains(Evento.comida));
+      expect(isNew, isFalse);
+      final record = recordDe('ABC001')!;
+      expect(record.status, ScanStatus.denied);
+      expect(record.eventos.length, 2);
+      expect(record.eventos.last.status, ScanStatus.denied);
+      expect(record.eventos.first.status, ScanStatus.reserved);
     });
   });
 
-  group('Pagination Logic', () {
-    test('getItemsPage returns correct page of items', () {
-      const pageSize = 50;
-      final records = List.generate(
-        100,
-        (i) => ScanRecord(
-          id: 'id-$i',
-          code: 'CODE$i',
-          type: ScanType.solapine,
-          scannedAt: DateTime.now(),
-          eventos: [],
-          status: ScanStatus.reserved,
-        ),
+  group('processScan - caso B (otro evento o día)', () {
+    test('otro evento el mismo día pasa y desmarca el registro', () {
+      scanProvider.processScan('ABC001', Evento.desayuno, '1', personaProvider);
+      scanProvider.processScan('ABC001', Evento.desayuno, '1', personaProvider);
+      final isNew = scanProvider.processScan('ABC001', Evento.almuerzo, '1', personaProvider);
+
+      expect(isNew, isTrue);
+      final record = recordDe('ABC001')!;
+      expect(record.status, ScanStatus.reserved);
+      expect(record.eventos.map((e) => e.evento),
+          orderedEquals([Evento.desayuno, Evento.desayuno, Evento.almuerzo]));
+      expect(record.eventos.map((e) => e.status),
+          orderedEquals([ScanStatus.reserved, ScanStatus.denied, ScanStatus.reserved]));
+    });
+
+    test('otro evento el mismo día sin persona queda inactive pero pasa', () {
+      scanProvider.processScan('XYZ999', Evento.desayuno, null, personaProvider);
+      final isNew = scanProvider.processScan('XYZ999', Evento.comida, null, personaProvider);
+
+      expect(isNew, isTrue);
+      expect(recordDe('XYZ999')!.eventos.length, 2);
+    });
+
+    test('el mismo evento al día siguiente vuelve a pasar (dedup es por día)', () {
+      scanProvider.processScan('ABC001', Evento.desayuno, '1', personaProvider);
+      final manana = hoy.add(const Duration(days: 1));
+      final isNew = scanProvider.processScan(
+          'ABC001', Evento.desayuno, '1', personaProvider, timestamp: manana);
+
+      expect(isNew, isTrue);
+      final record = recordDe('ABC001')!;
+      expect(record.status, ScanStatus.reserved);
+      expect(record.eventos.map((e) => e.status),
+          orderedEquals([ScanStatus.reserved, ScanStatus.reserved]));
+    });
+  });
+
+  group('persistencia del status por EventoScan', () {
+    test('fromJson sin status migra a reserved', () {
+      final eventoScan = EventoScan.fromJson({
+        'evento': 'almuerzo',
+        'timestamp': DateTime(2026, 9, 29, 12, 30).toIso8601String(),
+        'puerta': '1',
+      });
+
+      expect(eventoScan.status, ScanStatus.reserved);
+    });
+
+    test('fromJson respeta el status guardado', () {
+      final eventoScan = EventoScan.fromJson({
+        'evento': 'desayuno',
+        'timestamp': DateTime(2026, 9, 29, 8, 0).toIso8601String(),
+        'puerta': null,
+        'status': 'denied',
+      });
+
+      expect(eventoScan.status, ScanStatus.denied);
+    });
+
+    test('round-trip del registro conserva status de eventos', () {
+      final record = ScanRecord(
+        id: 'id-1',
+        code: 'ABC001',
+        type: ScanType.solapine,
+        scannedAt: DateTime(2026, 9, 29, 8, 0),
+        personaId: '1',
+        personaSolapine: '001',
+        personaNombre: 'Juan Perez',
+        eventos: [
+          EventoScan(
+            evento: Evento.desayuno,
+            timestamp: DateTime(2026, 9, 29, 8, 0),
+            status: ScanStatus.reserved,
+          ),
+        ],
+        status: ScanStatus.denied,
       );
 
-      final page1 = _getItemsPage(records, 1, pageSize);
-      expect(page1.length, equals(50));
-      expect(page1.first.code, equals('CODE0'));
-      expect(page1.last.code, equals('CODE49'));
+      final restored = ScanRecord.fromJson(record.toJson());
 
-      final page2 = _getItemsPage(records, 2, pageSize);
-      expect(page2.length, equals(50));
-      expect(page2.first.code, equals('CODE50'));
-      expect(page2.last.code, equals('CODE99'));
-
-      final page3 = _getItemsPage(records, 3, pageSize);
-      expect(page3.length, equals(0));
-    });
-
-    test('hasMoreData calculation is correct', () {
-      const pageSize = 50;
-
-      expect(_hasMoreData(1, pageSize, 49), isFalse);
-      expect(_hasMoreData(1, pageSize, 50), isFalse);
-      expect(_hasMoreData(1, pageSize, 51), isTrue);
-      expect(_hasMoreData(2, pageSize, 100), isFalse);
-      expect(_hasMoreData(2, pageSize, 101), isTrue);
+      expect(restored.status, ScanStatus.denied);
+      expect(restored.eventos.single.status, ScanStatus.reserved);
     });
   });
-}
-
-Persona? _findPersonaByCodigoSolapin(String code, List<Persona> personas) {
-  final codeLower = code.toLowerCase();
-  for (final persona in personas) {
-    if (persona.codigoSolapin.toLowerCase() == codeLower) {
-      return persona;
-    }
-  }
-  return null;
-}
-
-Persona? _findPersonaBySolapin(String code, List<Persona> personas) {
-  final codeLower = code.toLowerCase();
-  for (final persona in personas) {
-    if (persona.solapin.toLowerCase() == codeLower) {
-      return persona;
-    }
-  }
-  return null;
-}
-
-bool _isValidCode(String code) {
-  if (code.isEmpty) return false;
-  const minLength = 5;
-  const maxLength = 15;
-  final length = code.length;
-  return length >= minLength && length <= maxLength;
-}
-
-ScanStatus _determineStatus(Persona? persona) {
-  return persona != null ? ScanStatus.reserved : ScanStatus.notReserved;
-}
-
-ScanStatus _determineDeniedStatus(Persona? persona) {
-  return ScanStatus.denied;
-}
-
-List<ScanRecord> _getItemsPage(List<ScanRecord> records, int page, int pageSize) {
-  final start = (page - 1) * pageSize;
-  final end = start + pageSize;
-  if (start >= records.length) return [];
-  return records.sublist(start, end.clamp(0, records.length));
-}
-
-bool _hasMoreData(int currentPage, int pageSize, int totalItems) {
-  return currentPage * pageSize < totalItems;
 }

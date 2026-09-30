@@ -5,7 +5,6 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/auto_delete_service.dart';
 import '../../domain/entities/scan_record.dart';
 import '../../domain/entities/evento.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
 import '../providers/persona_provider.dart';
 
@@ -59,12 +58,15 @@ class ScanProvider extends ChangeNotifier {
     }
   }
 
-  bool processScan(String code, Evento evento, String? puerta, PersonaProvider personaProvider) {
+  bool processScan(String code, Evento evento, String? puerta, PersonaProvider personaProvider,
+      {DateTime? timestamp}) {
     final codeNormalized = code.toUpperCase();
     if (!_isValidCode(codeNormalized)) return false;
 
     final persona = personaProvider.findPersona(codeNormalized);
-    final now = DateTime.now();
+    final nuevoStatus = persona != null ? ScanStatus.reserved : ScanStatus.inactive;
+    // [timestamp] es un hook de test para simular otro día; en producción es ahora.
+    final now = timestamp ?? DateTime.now();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
 
@@ -77,12 +79,16 @@ class ScanProvider extends ChangeNotifier {
 
     if (existingIndex != -1) {
       final existing = _records[existingIndex];
+      // El 2º intento del mismo evento el mismo día queda denegado y se registra
+      // como un evento propio `denied`. Un escaneo legítimo de otro evento (o
+      // día) recalcula `status` en el caso B y desmarca el registro completo.
       _records[existingIndex] = existing.copyWith(
         status: ScanStatus.denied,
         eventos: [...existing.eventos, EventoScan(
           evento: evento,
-          timestamp: DateTime.now(),
+          timestamp: now,
           puerta: puerta,
+          status: ScanStatus.denied,
         )],
       );
       _saveRecords();
@@ -98,10 +104,12 @@ class ScanProvider extends ChangeNotifier {
     if (sameCodeIndex != -1) {
       final existing = _records[sameCodeIndex];
       _records[sameCodeIndex] = existing.copyWith(
+        status: nuevoStatus,
         eventos: [...existing.eventos, EventoScan(
           evento: evento,
-          timestamp: DateTime.now(),
+          timestamp: now,
           puerta: puerta,
+          status: nuevoStatus,
         )],
       );
       _saveRecords();
@@ -110,35 +118,25 @@ class ScanProvider extends ChangeNotifier {
     }
 
     // CASO C: Código nuevo - determinar status
-    ScanStatus status;
-    if (persona != null) {
-      status = ScanStatus.reserved;
-    } else {
-      status = ScanStatus.inactive; // CASO C: solapín inactivo
-    }
-
     _records.add(ScanRecord(
       id: const Uuid().v4(),
       code: codeNormalized,
       type: ValidationUtils.detectType(codeNormalized),
-      scannedAt: DateTime.now(),
+      scannedAt: now,
       personaId: persona?.idPersona,
       personaSolapine: persona?.solapin,
       personaNombre: persona?.nombreCompleto,
       categoriaResidente: persona?.categoriaResidente ?? 1,
-      eventos: [EventoScan(evento: evento, timestamp: DateTime.now(), puerta: puerta)],
-      status: status,
+      eventos: [EventoScan(evento: evento, timestamp: now, puerta: puerta, status: nuevoStatus)],
+      status: nuevoStatus,
+      isDuplicate: false,
     ));
     _saveRecords();
     notifyListeners();
     return true;
   }
 
-  bool _isValidCode(String code) {
-    if (code.isEmpty) return false;
-    final length = code.length;
-    return length >= AppConstants.minCodeLength && length <= AppConstants.maxCodeLength;
-  }
+  bool _isValidCode(String code) => ValidationUtils.isValidCode(code);
 
   void deleteRecord(ScanRecord record) {
     _records.removeWhere((r) => r.id == record.id);

@@ -9,22 +9,35 @@ class EventoScan {
   final DateTime timestamp;
   final String? puerta;
 
+  /// Resultado de este intento concreto. El duplicado del mismo evento el mismo
+  /// día queda `denied`, mientras que otros eventos del mismo día pueden pasar
+  /// como `reserved`. Ya no se degrada el estado del registro entero.
+  final ScanStatus status;
+
   const EventoScan({
     required this.evento,
     required this.timestamp,
     this.puerta,
+    this.status = ScanStatus.reserved,
   });
 
   Map<String, dynamic> toJson() => {
     'evento': evento.name,
     'timestamp': timestamp.toIso8601String(),
     'puerta': puerta,
+    'status': status.name,
   };
 
   factory EventoScan.fromJson(Map<String, dynamic> json) => EventoScan(
     evento: Evento.values.firstWhere((e) => e.name == json['evento']),
     timestamp: DateTime.parse(json['timestamp'] as String),
     puerta: json['puerta'] as String?,
+    // Registros guardados antes de tener `status` por evento: se tratan como
+    // reserved. Los denied viejos siguen representados por `ScanRecord.status`.
+    status: ScanStatus.values.firstWhere(
+      (s) => s.name == json['status'],
+      orElse: () => ScanStatus.reserved,
+    ),
   );
 }
 
