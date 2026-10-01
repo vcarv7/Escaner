@@ -110,10 +110,13 @@ class _RetryInterceptor extends Interceptor {
     handler.next(err);
   }
 
+  /// Reintenta solo errores del servidor, nunca timeouts.
+  ///
+  /// Un timeout con `receiveTimeout: 90s` reintentado dos veces son casi tres
+  /// minutos de espera para terminar mostrando el mismo error. Peor: el
+  /// operador ve la app "colgada" y no sabe si crasheó o si está trabajando.
+  /// Un 5xx en cambio sí es transitorio y el reintento suele resolverlo.
   bool _shouldRetry(DioException err) {
-    return err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        (err.response?.statusCode != null && err.response!.statusCode! >= 500);
+    return err.response?.statusCode != null && err.response!.statusCode! >= 500;
   }
 }

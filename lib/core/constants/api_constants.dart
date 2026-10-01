@@ -17,14 +17,21 @@ class ApiConstants {
   /// Registros por página solicitados al descargar personas.
   ///
   /// El backend la valida con un tope propio: peticiones con `page_size > 200`
-  /// devuelven HTTP 400 (`El tamaño de página no puede ser mayor que 200.`),
-  /// no un tope silencioso. Por eso no se piden 1000 aquí.
-  static const int defaultPageSize = 200;
+  /// devuelven HTTP 400 (`El tamaño de página no puede ser mayor que 200.`).
+  ///
+  /// Bajó de 200 a 50 porque las personas ahora incluyen foto. Con 200 la
+  /// respuesta pasa de cientos de KB a varios MB, el backend tarda en armarla
+  /// y la petición moría por timeout. 50 mantiene el payload por debajo del
+  /// límite de tiempo a costa de más viajes.
+  static const int defaultPageSize = 50;
 
   /// Páginas descargadas en paralelo tras la primera. 6 mantiene el servidor
   /// holgado; el _RetryInterceptor puede multiplicar la carga ante un 5xx.
   static const int personasSyncConcurrency = 6;
-  static const Duration connectTimeout = Duration(seconds: 20);
-  static const Duration receiveTimeout = Duration(seconds: 30);
+
+  /// El endpoint de personas tarda por el peso de las fotos: 20s ya no
+  /// alcanzan y la sincronización moría siempre en el primer request.
+  static const Duration connectTimeout = Duration(seconds: 60);
+  static const Duration receiveTimeout = Duration(seconds: 90);
   static const Duration sendTimeout = Duration(seconds: 30);
 }
