@@ -1,70 +1,71 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:escaner_1/domain/entities/scan_item.dart';
+import 'package:escaner_1/domain/entities/scan_record.dart';
 import 'package:escaner_1/domain/entities/evento.dart';
 
 void main() {
-  group('ScanItem', () {
+  group('ScanRecord', () {
     group('constructor', () {
-      test('creates ScanItem with required fields', () {
+      test('creates ScanRecord with required fields', () {
         final now = DateTime.now();
-        final item = ScanItem(
+        final record = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
           scannedAt: now,
+          eventos: [],
+          status: ScanStatus.reserved,
         );
 
-        expect(item.code, equals('ABC123'));
-        expect(item.type, equals(ScanType.solapine));
-        expect(item.scannedAt, equals(now));
-        expect(item.isDuplicate, isFalse);
-        expect(item.status, equals(ScanStatus.reserved));
+        expect(record.id, equals('test-id'));
+        expect(record.code, equals('ABC123'));
+        expect(record.type, equals(ScanType.solapine));
+        expect(record.scannedAt, equals(now));
+        expect(record.eventos, isEmpty);
+        expect(record.status, equals(ScanStatus.reserved));
+        expect(record.isDuplicate, isFalse);
+        expect(record.categoriaResidente, equals(1));
       });
 
-      test('creates ScanItem with all fields', () {
+      test('creates ScanRecord with all fields', () {
         final now = DateTime.now();
-        final item = ScanItem(
+        final eventos = [EventoScan(evento: Evento.almuerzo, timestamp: now)];
+        final record = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
-          isDuplicate: true,
           scannedAt: now,
-          evento: Evento.almuerzo,
+          personaId: '1',
           personaSolapine: '001',
           personaNombre: 'Juan Perez',
-          status: ScanStatus.duplicate,
+          categoriaResidente: 2,
+          eventos: eventos,
+          status: ScanStatus.denied,
+          isDuplicate: true,
         );
 
-        expect(item.code, equals('ABC123'));
-        expect(item.type, equals(ScanType.solapine));
-        expect(item.isDuplicate, isTrue);
-        expect(item.scannedAt, equals(now));
-        expect(item.evento, equals(Evento.almuerzo));
-        expect(item.personaSolapine, equals('001'));
-        expect(item.personaNombre, equals('Juan Perez'));
-        expect(item.status, equals(ScanStatus.duplicate));
-      });
-
-      test('default values are applied correctly', () {
-        final now = DateTime.now();
-        final item = ScanItem(
-          code: 'ABC123',
-          type: ScanType.tarjeta,
-          scannedAt: now,
-        );
-
-        expect(item.isDuplicate, isFalse);
-        expect(item.evento, isNull);
-        expect(item.personaSolapine, isNull);
-        expect(item.personaNombre, isNull);
-        expect(item.status, equals(ScanStatus.reserved));
+        expect(record.id, equals('test-id'));
+        expect(record.code, equals('ABC123'));
+        expect(record.type, equals(ScanType.solapine));
+        expect(record.scannedAt, equals(now));
+        expect(record.personaId, equals('1'));
+        expect(record.personaSolapine, equals('001'));
+        expect(record.personaNombre, equals('Juan Perez'));
+        expect(record.categoriaResidente, equals(2));
+        expect(record.eventos, equals(eventos));
+        expect(record.status, equals(ScanStatus.denied));
+        expect(record.isDuplicate, isTrue);
       });
     });
 
     group('copyWith', () {
       test('copies with new code', () {
-        final original = ScanItem(
+        final original = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
           scannedAt: DateTime.now(),
+          eventos: [],
+          status: ScanStatus.reserved,
         );
 
         final copied = original.copyWith(code: 'XYZ789');
@@ -74,73 +75,73 @@ void main() {
         expect(copied.scannedAt, equals(original.scannedAt));
       });
 
-      test('copies with new isDuplicate', () {
-        final original = ScanItem(
-          code: 'ABC123',
-          type: ScanType.solapine,
-          isDuplicate: false,
-          scannedAt: DateTime.now(),
-        );
-
-        final copied = original.copyWith(isDuplicate: true);
-
-        expect(copied.isDuplicate, isTrue);
-        expect(copied.code, equals(original.code));
-      });
-
       test('copies with new status', () {
-        final original = ScanItem(
+        final original = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
-          status: ScanStatus.reserved,
           scannedAt: DateTime.now(),
+          eventos: [],
+          status: ScanStatus.reserved,
         );
 
-        final copied = original.copyWith(status: ScanStatus.notReserved);
+        final copied = original.copyWith(status: ScanStatus.denied);
 
-        expect(copied.status, equals(ScanStatus.notReserved));
+        expect(copied.status, equals(ScanStatus.denied));
         expect(copied.code, equals(original.code));
       });
 
-      test('copies with persona info', () {
-        final original = ScanItem(
+      test('copies with new eventos', () {
+        final original = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
           scannedAt: DateTime.now(),
+          eventos: [],
+          status: ScanStatus.reserved,
         );
 
-        final copied = original.copyWith(
-          personaSolapine: '001',
-          personaNombre: 'Juan Perez',
-        );
+        final newEventos = [EventoScan(evento: Evento.almuerzo, timestamp: DateTime.now())];
+        final copied = original.copyWith(eventos: newEventos);
 
-        expect(copied.personaSolapine, equals('001'));
-        expect(copied.personaNombre, equals('Juan Perez'));
+        expect(copied.eventos, equals(newEventos));
+        expect(copied.code, equals(original.code));
       });
+    });
 
-      test('preserves all other fields when copying single field', () {
+    group('toJson/fromJson', () {
+      test('serializes and deserializes correctly', () {
         final now = DateTime.now();
-        final original = ScanItem(
+        final record = ScanRecord(
+          id: 'test-id',
           code: 'ABC123',
           type: ScanType.solapine,
-          isDuplicate: true,
           scannedAt: now,
-          evento: Evento.almuerzo,
+          personaId: '1',
           personaSolapine: '001',
           personaNombre: 'Juan Perez',
-          status: ScanStatus.duplicate,
+          categoriaResidente: 2,
+          eventos: [EventoScan(evento: Evento.almuerzo, timestamp: now, puerta: '111')],
+          status: ScanStatus.reserved,
+          isDuplicate: false,
         );
 
-        final copied = original.copyWith(status: ScanStatus.notReservedDuplicate);
+        final json = record.toJson();
+        final deserialized = ScanRecord.fromJson(json);
 
-        expect(copied.code, equals('ABC123'));
-        expect(copied.type, equals(ScanType.solapine));
-        expect(copied.isDuplicate, isTrue);
-        expect(copied.scannedAt, equals(now));
-        expect(copied.evento, equals(Evento.almuerzo));
-        expect(copied.personaSolapine, equals('001'));
-        expect(copied.personaNombre, equals('Juan Perez'));
-        expect(copied.status, equals(ScanStatus.notReservedDuplicate));
+        expect(deserialized.id, equals(record.id));
+        expect(deserialized.code, equals(record.code));
+        expect(deserialized.type, equals(record.type));
+        expect(deserialized.scannedAt, equals(record.scannedAt));
+        expect(deserialized.personaId, equals(record.personaId));
+        expect(deserialized.personaSolapine, equals(record.personaSolapine));
+        expect(deserialized.personaNombre, equals(record.personaNombre));
+        expect(deserialized.categoriaResidente, equals(record.categoriaResidente));
+        expect(deserialized.eventos.length, equals(record.eventos.length));
+        expect(deserialized.eventos.first.evento, equals(record.eventos.first.evento));
+        expect(deserialized.eventos.first.puerta, equals(record.eventos.first.puerta));
+        expect(deserialized.status, equals(record.status));
+        expect(deserialized.isDuplicate, equals(record.isDuplicate));
       });
     });
   });
@@ -149,8 +150,8 @@ void main() {
     test('has all expected values', () {
       expect(ScanStatus.values, contains(ScanStatus.reserved));
       expect(ScanStatus.values, contains(ScanStatus.notReserved));
-      expect(ScanStatus.values, contains(ScanStatus.duplicate));
-      expect(ScanStatus.values, contains(ScanStatus.notReservedDuplicate));
+      expect(ScanStatus.values, contains(ScanStatus.inactive));
+      expect(ScanStatus.values, contains(ScanStatus.denied));
     });
 
     test('has exactly 4 values', () {
@@ -166,6 +167,37 @@ void main() {
 
     test('has exactly 2 values', () {
       expect(ScanType.values.length, equals(2));
+    });
+  });
+
+  group('EventoScan', () {
+    test('serializes and deserializes correctly', () {
+      final now = DateTime.now();
+      final eventoScan = EventoScan(
+        evento: Evento.almuerzo,
+        timestamp: now,
+        puerta: '111',
+      );
+
+      final json = eventoScan.toJson();
+      final deserialized = EventoScan.fromJson(json);
+
+      expect(deserialized.evento, equals(eventoScan.evento));
+      expect(deserialized.timestamp, equals(eventoScan.timestamp));
+      expect(deserialized.puerta, equals(eventoScan.puerta));
+    });
+
+    test('serializes without puerta', () {
+      final now = DateTime.now();
+      final eventoScan = EventoScan(
+        evento: Evento.desayuno,
+        timestamp: now,
+      );
+
+      final json = eventoScan.toJson();
+      final deserialized = EventoScan.fromJson(json);
+
+      expect(deserialized.puerta, isNull);
     });
   });
 }

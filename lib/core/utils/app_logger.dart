@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:dio/dio.dart';
@@ -17,11 +16,7 @@ void initAppLogger() {
     if (record.stackTrace != null) {
       buffer.write('\n  Stack: ${record.stackTrace}');
     }
-    if (Platform.isAndroid || Platform.isIOS) {
-      debugPrint(buffer.toString());
-    } else {
-      debugPrint(buffer.toString());
-    }
+    debugPrint(buffer.toString());
   });
 }
 

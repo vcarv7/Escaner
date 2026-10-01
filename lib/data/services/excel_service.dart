@@ -2,17 +2,15 @@ import 'dart:io';
 import 'package:excel_community/excel_community.dart';
 import 'package:flutter/foundation.dart';
 import '../../core/utils/date_utils.dart';
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 
-Uint8List? _generateExcelBytesSync(List<ScanItem> items) {
-  if (items.isEmpty) {
+Uint8List? _generateExcelBytesSync(List<ScanRecord> records) {
+  if (records.isEmpty) {
     return null;
   }
 
   try {
     final excel = Excel.createExcel();
-    // Tomar la primera hoja disponible en vez de asumir el nombre 'Sheet1',
-    // que puede variar según la versión/configuración de excel_community.
     final sheet = excel.tables.values.firstOrNull;
 
     if (sheet == null) {
@@ -26,16 +24,16 @@ Uint8List? _generateExcelBytesSync(List<ScanItem> items) {
     sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: 0)).value = TextCellValue('tipo');
     sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: 0)).value = TextCellValue('fecha');
 
-    for (var i = 0; i < items.length; i++) {
-      final item = items[i];
+    for (var i = 0; i < records.length; i++) {
+      final record = records[i];
       final row = i + 1;
 
       sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = IntCellValue(i + 1);
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(item.personaNombre ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(item.personaSolapine ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(item.evento?.displayName ?? '');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(item.type == ScanType.solapine ? 'solapine' : 'tarjeta');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(DateUtils.formatDate(item.scannedAt.toLocal()));
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(record.personaNombre ?? '');
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(record.personaSolapine ?? '');
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(record.eventos.isNotEmpty ? record.eventos.first.evento.displayName : '');
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(record.type == ScanType.solapine ? 'solapine' : 'tarjeta');
+      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(DateUtils.formatDate(record.scannedAt.toLocal()));
     }
 
     final encoded = excel.encode();
@@ -50,8 +48,8 @@ Uint8List? _generateExcelBytesSync(List<ScanItem> items) {
 }
 
 class ExcelService {
-  static Future<Uint8List?> generateExcelBytes(List<ScanItem> items) async {
-    return compute(_generateExcelBytesSync, items);
+  static Future<Uint8List?> generateExcelBytes(List<ScanRecord> records) async {
+    return compute(_generateExcelBytesSync, records);
   }
 
   static Future<bool> saveExcel(Uint8List bytes, String filePath) async {

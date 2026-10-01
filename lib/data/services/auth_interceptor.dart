@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import '../../core/constants/api_constants.dart';
 import '../services/auth_token_storage.dart';
+import '../services/session_events.dart';
 
 class AuthInterceptor extends Interceptor {
   final AuthTokenStorage _tokenStorage;
@@ -44,7 +45,7 @@ class AuthInterceptor extends Interceptor {
     try {
       final refreshToken = await _tokenStorage.getRefreshToken();
       if (refreshToken == null) {
-        await _tokenStorage.clear();
+        await _clearSession();
         _failQueuedRequests(Exception('No refresh token'));
         handler.next(err);
         return;
@@ -61,35 +62,52 @@ class AuthInterceptor extends Interceptor {
       if (response.statusCode == 200) {
         final data = response.data as Map<String, dynamic>;
         final accessToken = data['access'] as String;
-        final refreshToken = data['refresh'] as String;
+        // El backend no rota el refresh y lo omite en la respuesta: conservar
+        // el que ya teníamos en lugar de sobrescribirlo con una cadena vacía.
+        final newRefreshToken = data['refresh'] as String? ?? refreshToken;
 
-        final tokenStorage = AuthTokenStorage();
-        await tokenStorage.saveTokens(
+        await _tokenStorage.saveTokens(
           accessToken: accessToken,
-          refreshToken: refreshToken,
+          refreshToken: newRefreshToken,
           expiresInSeconds: data['expiresIn'] as int? ?? 3600,
-          username: await AuthTokenStorage().getUsername(),
+          username: await _tokenStorage.getUsername(),
         );
 
         err.requestOptions.headers['Authorization'] = 'Bearer $accessToken';
         final retryResponse = await _dio.fetch(err.requestOptions);
         handler.resolve(retryResponse);
 
-        _processQueue(accessToken);
+        await _processQueue(accessToken);
       } else {
-        final tokenStorage = AuthTokenStorage();
-        await tokenStorage.clear();
+        await _clearSession();
         _failQueuedRequests(Exception('Token refresh failed'));
         handler.next(err);
       }
     } catch (e) {
-      final tokenStorage = AuthTokenStorage();
-      await tokenStorage.clear();
-      _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
-      handler.next(err);
+      if (e is DioException &&
+          (e.type == DioExceptionType.connectionError ||
+              e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.unknown)) {
+        // Fallo de red: conservar tokens, no cerrar sesión
+        _failQueuedRequests(e);
+        handler.next(err);
+      } else {
+        await _clearSession();
+        _failQueuedRequests(e is Exception ? e : Exception(e.toString()));
+        handler.next(err);
+      }
     } finally {
       _isRefreshing = false;
     }
+  }
+
+  /// Limpia los tokens y avisa a la capa de presentación para que AuthProvider
+  /// sincronice su estado en vez de quedar desincronizado.
+  Future<void> _clearSession() async {
+    await _tokenStorage.clear();
+    SessionEvents.instance.notifyExpired();
   }
 
   Future<void> _queueRequest(RequestOptions options, ErrorInterceptorHandler handler) async {
@@ -111,17 +129,18 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  void _processQueue(String newAccessToken) {
-    for (final request in _requestQueue) {
+  Future<void> _processQueue(String newAccessToken) async {
+    final pending = List<_QueuedRequest>.from(_requestQueue);
+    _requestQueue.clear();
+    for (final request in pending) {
       request.options.headers['Authorization'] = 'Bearer $newAccessToken';
       try {
-        final response = _dio.fetch(request.options);
+        final response = await _dio.fetch(request.options);
         request.completer.complete(response);
       } catch (e) {
         request.completer.completeError(e);
       }
     }
-    _requestQueue.clear();
   }
 
   void _failQueuedRequests(Exception error) {

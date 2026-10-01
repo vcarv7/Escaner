@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/auto_delete_service.dart';
-import '../../domain/entities/scan_item.dart';
+import '../../domain/entities/scan_record.dart';
 import '../../domain/entities/evento.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/utils/validation_utils.dart';
 import '../providers/persona_provider.dart';
 
 class ScanProvider extends ChangeNotifier {
-  List<ScanItem> _items = [];
-  List<ScanItem> _trashItems = [];
+  List<ScanRecord> _records = [];
+  List<ScanRecord> _trashRecords = [];
   bool _isLoading = true;
   bool _initialized = false;
 
@@ -18,8 +18,8 @@ class ScanProvider extends ChangeNotifier {
   final StreamController<AutoDeleteNotification> _notifController =
       StreamController<AutoDeleteNotification>.broadcast();
 
-  List<ScanItem> get items => List.unmodifiable(_items);
-  List<ScanItem> get trashItems => List.unmodifiable(_trashItems);
+  List<ScanRecord> get records => List.unmodifiable(_records);
+  List<ScanRecord> get trashRecords => List.unmodifiable(_trashRecords);
   bool get isLoading => _isLoading;
 
   Stream<AutoDeleteNotification> get autoDeleteNotifications =>
@@ -36,8 +36,8 @@ class ScanProvider extends ChangeNotifier {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
-    _items = await StorageService.loadItems();
-    _trashItems = await StorageService.loadTrash();
+    _records = await StorageService.loadRecords();
+    _trashRecords = await StorageService.loadTrash();
     _isLoading = false;
     AutoDeleteService.iniciar();
     _applyAutoDelete();
@@ -47,155 +47,139 @@ class ScanProvider extends ChangeNotifier {
   }
 
   void _applyAutoDelete() {
-    final notif = AutoDeleteService.revisar(_items, _trashItems);
+    final notif = AutoDeleteService.revisarScanRecords(_records, _trashRecords);
     if (notif.itemsMovidosAPapelera > 0 || notif.itemsEliminados > 0) {
-      _items = notif.itemsRestantes;
-      _trashItems = notif.trashActualizada;
-      _saveItems();
+      _records = notif.recordsRestantes;
+      _trashRecords = notif.trashActualizada;
+      _saveRecords();
       _saveTrash();
       _notifController.add(notif);
       notifyListeners();
     }
   }
 
-  bool addItem(String code, Evento evento, PersonaProvider personaProvider) {
-    return addItemFromScanner(code, evento, personaProvider);
-  }
-
-  bool addItemFromScanner(String code, Evento evento, PersonaProvider personaProvider) {
+  bool processScan(String code, Evento evento, String? puerta, PersonaProvider personaProvider,
+      {DateTime? timestamp}) {
     final codeNormalized = code.toUpperCase();
     if (!_isValidCode(codeNormalized)) return false;
 
-    final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
     final persona = personaProvider.findPersona(codeNormalized);
+    final nuevoStatus = persona != null ? ScanStatus.reserved : ScanStatus.inactive;
+    // [timestamp] es un hook de test para simular otro día; en producción es ahora.
+    final now = timestamp ?? DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+
+    // CASO A: Verificar duplicado por código + evento + MISMA FECHA (día)
+    final existingIndex = _records.indexWhere(
+      (r) => r.code.toUpperCase() == codeNormalized &&
+             r.eventos.any((e) => e.evento == evento &&
+                 e.timestamp.isAfter(todayStart) && e.timestamp.isBefore(todayEnd))
+    );
 
     if (existingIndex != -1) {
-      final existing = _items[existingIndex];
-      final newStatus = persona != null
-          ? ScanStatus.duplicate
-          : ScanStatus.notReservedDuplicate;
-      _items[existingIndex] = existing.copyWith(
-        isDuplicate: true,
-        status: newStatus,
+      final existing = _records[existingIndex];
+      // El 2º intento del mismo evento el mismo día queda denegado y se registra
+      // como un evento propio `denied`. Un escaneo legítimo de otro evento (o
+      // día) recalcula `status` en el caso B y desmarca el registro completo.
+      _records[existingIndex] = existing.copyWith(
+        status: ScanStatus.denied,
+        eventos: [...existing.eventos, EventoScan(
+          evento: evento,
+          timestamp: now,
+          puerta: puerta,
+          status: ScanStatus.denied,
+        )],
       );
-      _saveItems();
+      _saveRecords();
       notifyListeners();
       return false;
     }
 
-    ScanStatus status;
-    if (persona != null) {
-      status = ScanStatus.reserved;
-    } else {
-      status = ScanStatus.notReserved;
-    }
+    // Buscar si el código ya existe (para agregar evento a record existente)
+    final sameCodeIndex = _records.indexWhere(
+      (r) => r.code.toUpperCase() == codeNormalized
+    );
 
-    _items.add(ScanItem(
-      code: codeNormalized,
-      type: ValidationUtils.detectType(codeNormalized),
-      isDuplicate: false,
-      scannedAt: DateTime.now(),
-      evento: evento,
-      personaSolapine: persona?.solapin,
-      personaNombre: persona?.nombreCompleto,
-      status: status,
-    ));
-    _saveItems();
-    notifyListeners();
-    return true;
-  }
-
-  bool addItemManual(String code, Evento evento, PersonaProvider personaProvider) {
-    final codeNormalized = code.toUpperCase();
-    if (!_isValidCode(codeNormalized)) return false;
-
-    final existingIndex = _items.indexWhere((s) => s.code.toUpperCase() == codeNormalized);
-    final persona = personaProvider.findPersona(codeNormalized);
-
-    if (existingIndex != -1) {
-      final existing = _items[existingIndex];
-      final newStatus = persona != null
-          ? ScanStatus.duplicate
-          : ScanStatus.notReservedDuplicate;
-      _items[existingIndex] = existing.copyWith(
-        isDuplicate: true,
-        status: newStatus,
+    if (sameCodeIndex != -1) {
+      final existing = _records[sameCodeIndex];
+      _records[sameCodeIndex] = existing.copyWith(
+        status: nuevoStatus,
+        eventos: [...existing.eventos, EventoScan(
+          evento: evento,
+          timestamp: now,
+          puerta: puerta,
+          status: nuevoStatus,
+        )],
       );
-      _saveItems();
+      _saveRecords();
       notifyListeners();
-      return false;
+      return true;
     }
 
-    ScanStatus status;
-    if (persona != null) {
-      status = ScanStatus.reserved;
-    } else {
-      status = ScanStatus.notReserved;
-    }
-
-    _items.add(ScanItem(
+    // CASO C: Código nuevo - determinar status
+    _records.add(ScanRecord(
+      id: const Uuid().v4(),
       code: codeNormalized,
       type: ValidationUtils.detectType(codeNormalized),
-      isDuplicate: false,
-      scannedAt: DateTime.now(),
-      evento: evento,
+      scannedAt: now,
+      personaId: persona?.idPersona,
       personaSolapine: persona?.solapin,
       personaNombre: persona?.nombreCompleto,
-      status: status,
+      categoriaResidente: persona?.categoriaResidente ?? 1,
+      eventos: [EventoScan(evento: evento, timestamp: now, puerta: puerta, status: nuevoStatus)],
+      status: nuevoStatus,
+      isDuplicate: false,
     ));
-    _saveItems();
+    _saveRecords();
     notifyListeners();
     return true;
   }
 
-  bool _isValidCode(String code) {
-    if (code.isEmpty) return false;
-    final length = code.length;
-    return length >= AppConstants.minCodeLength && length <= AppConstants.maxCodeLength;
-  }
+  bool _isValidCode(String code) => ValidationUtils.isValidCode(code);
 
-  void deleteItem(ScanItem item) {
-    _items.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
-    _trashItems.add(item);
-    _saveItems();
+  void deleteRecord(ScanRecord record) {
+    _records.removeWhere((r) => r.id == record.id);
+    _trashRecords.add(record);
+    _saveRecords();
     _saveTrash();
     notifyListeners();
   }
 
-  void restoreItem(ScanItem item) {
-    _trashItems.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
-    final existingIdx = _items.indexWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
+  void restoreRecord(ScanRecord record) {
+    _trashRecords.removeWhere((r) => r.id == record.id);
+    final existingIdx = _records.indexWhere((r) => r.id == record.id);
     if (existingIdx != -1) {
-      _items[existingIdx] = item;
+      _records[existingIdx] = record;
     } else {
-      _items.add(item);
+      _records.add(record);
     }
-    _saveItems();
+    _saveRecords();
     _saveTrash();
     notifyListeners();
   }
 
   void clearTrash() {
-    _trashItems.clear();
+    _trashRecords.clear();
     StorageService.clearTrash();
     notifyListeners();
   }
 
   void restoreAll() {
-    for (final item in List.from(_trashItems)) {
-      _trashItems.removeWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
-      final existingIdx = _items.indexWhere((i) => i.code.toUpperCase() == item.code.toUpperCase());
+    for (final record in List.from(_trashRecords)) {
+      _trashRecords.removeWhere((r) => r.id == record.id);
+      final existingIdx = _records.indexWhere((r) => r.id == record.id);
       if (existingIdx != -1) {
-        _items[existingIdx] = item;
+        _records[existingIdx] = record;
       } else {
-        _items.add(item);
+        _records.add(record);
       }
     }
-    _saveItems();
+    _saveRecords();
     _saveTrash();
     notifyListeners();
   }
 
-  Future<void> _saveItems() => StorageService.saveItems(_items);
-  Future<void> _saveTrash() => StorageService.saveTrash(_trashItems);
+  Future<void> _saveRecords() => StorageService.saveRecords(_records);
+  Future<void> _saveTrash() => StorageService.saveTrash(_trashRecords);
 }

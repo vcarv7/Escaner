@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/evento_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/puerta_provider.dart';
 import 'dialogs/filtro_dialog.dart';
 import 'dialogs/evento_selector_dialog.dart';
+import 'dialogs/puerta_selector_dialog.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onMenuPressed;
@@ -29,8 +31,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final eventoProvider = context.watch<EventoProvider>();
     final settings = context.watch<SettingsProvider>();
+    final puertaProvider = context.watch<PuertaProvider>();
     final eventoActual = eventoProvider.eventoActual;
     final filtro = settings.filtro;
+    final puertaActual = puertaProvider.puertaSeleccionada;
 
     return AppBar(
       leading: Semantics(
@@ -49,6 +53,11 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               eventoActual.displayName,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
             ),
+          if (puertaActual != null)
+            Text(
+              'Puerta: $puertaActual',
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.normal),
+            ),
         ],
       ),
       centerTitle: true,
@@ -60,6 +69,22 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.restaurant),
               tooltip: 'Cambiar evento',
               onPressed: () => EventoSelectorDialog.show(context),
+            ),
+          ),
+          Semantics(
+            label: 'Cambiar puerta',
+            child: IconButton(
+              icon: const Icon(Icons.door_front_door),
+              tooltip: 'Cambiar puerta',
+              onPressed: () async {
+                final puerta = await PuertaSelectorDialog.show(
+                  context,
+                  initialPuerta: puertaActual,
+                );
+                if (puerta != null) {
+                  puertaProvider.seleccionarPuerta(puerta);
+                }
+              },
             ),
           ),
           Semantics(

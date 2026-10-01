@@ -118,7 +118,7 @@ en `.gitignore`.
    ```
 3. Build de release:
    ```bash
-   flutter build apk --release          # APK: SIGA-Escaner-release.apk
+    flutter build apk --release          # APK: SIGA-release.apk
    flutter build appbundle --release    # AAB para Google Play Store
    ```
    La configuración de firma (`signingConfigs.release`) ya está en

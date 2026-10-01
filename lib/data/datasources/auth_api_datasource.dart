@@ -23,7 +23,9 @@ class AuthTokens {
   factory AuthTokens.fromJson(Map<String, dynamic> json) {
     return AuthTokens(
       accessToken: json['access'] as String,
-      refreshToken: json['refresh'] as String,
+      // El backend no rota el refresh (ROTATE_REFRESH_TOKENS=False) y lo omite
+      // en la respuesta de /refresh/. Queda vacío y el caller conserva el viejo.
+      refreshToken: json['refresh'] as String? ?? '',
       expiresIn: (json['expiresIn'] as num?)?.toInt() ?? 3600,
       tokenType: json['tokenType'] as String? ?? 'Bearer',
       user: json['user'] as Map<String, dynamic>?,
@@ -94,7 +96,7 @@ class AuthApiDatasource {
               headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                if (csrfToken != null) 'X-CSRFToken': csrfToken,
+                'X-CSRFToken': ?csrfToken,
               },
             ),
             cancelToken: cancelToken,
@@ -148,7 +150,9 @@ class AuthApiDatasource {
       final tokens = AuthTokens.fromJson(response.data as Map<String, dynamic>);
       await _tokenStorage.saveTokens(
         accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        // Si el servidor no rota el refresh, la respuesta no lo trae: conservar
+        // el que ya teníamos en vez de sobrescribirlo con una cadena vacía.
+        refreshToken: tokens.refreshToken.isNotEmpty ? tokens.refreshToken : refreshTokenVal,
         expiresInSeconds: tokens.expiresIn,
         username: await _tokenStorage.getUsername(),
         userData: await _tokenStorage.getUserData(),

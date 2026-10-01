@@ -9,6 +9,9 @@ class ScanItemColors {
   static const Color duplicate = Color(0xFFB71C1C);
   static const Color duplicateBackground = Color(0x33B71C1C);
 
+  static const Color denied = Color(0xFFB71C1C);
+  static const Color inactive = Color(0xFFFF9800);
+
   static const Color solapineBackground = Color(0x1AFF0000);
   static const Color tarjetaBackground = Color(0x1A2196F3);
 

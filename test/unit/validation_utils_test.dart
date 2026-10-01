@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:escaner_1/core/utils/validation_utils.dart';
-import 'package:escaner_1/domain/entities/scan_item.dart';
+import 'package:escaner_1/domain/entities/scan_record.dart';
 
 void main() {
   group('ValidationUtils', () {

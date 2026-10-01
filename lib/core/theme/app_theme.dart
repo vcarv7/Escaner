@@ -10,6 +10,8 @@ class AppTheme {
   static const Color tertiary = Color(0xFF009688);
   static const Color onTertiary = Color(0xFFFFFFFF);
 
+  static const Color warning = Color(0xFFB26A00);
+
   static const Color lightBackground = Color(0xFFF5F5F5);
   static const Color lightOnBackground = Color(0xFF1A1A1A);
   static const Color lightSurface = Color(0xFFFFFFFF);

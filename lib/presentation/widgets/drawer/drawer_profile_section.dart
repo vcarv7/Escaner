@@ -16,9 +16,14 @@ class DrawerProfileSection extends StatelessWidget {
 
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
+        final isInitializing = auth.isInitializing;
         final isAuthenticated = auth.isAuthenticated;
         final userName = auth.username ?? 'Invitado';
-        final userEmail = isAuthenticated ? 'Sesión activa' : 'Inicia sesión para sincronizar';
+        final userEmail = isInitializing
+            ? 'Verificando sesión...'
+            : isAuthenticated
+                ? 'Sesión activa'
+                : 'Inicia sesión para sincronizar';
 
         return Container(
           width: double.infinity,
@@ -77,28 +82,19 @@ class DrawerProfileSection extends StatelessWidget {
                   color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
-              const SizedBox(height: DrawerConstants.spacingMedium),
-              if (isAuthenticated)
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    await context.read<AuthProvider>().logout();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Sesión cerrada')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Cerrar sesión'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red.shade700,
-                    side: BorderSide(color: Colors.red.shade700),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(DrawerConstants.smallRadius),
+              if (isInitializing)
+                const Padding(
+                  padding: EdgeInsets.only(top: DrawerConstants.spacingMedium),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   ),
                 )
-              else
+              else if (!isAuthenticated) ...[
+                const SizedBox(height: DrawerConstants.spacingMedium),
                 FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -117,6 +113,7 @@ class DrawerProfileSection extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         );

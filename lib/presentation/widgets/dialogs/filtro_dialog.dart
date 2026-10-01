@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/entities/evento.dart';
+import '../../../domain/entities/puerta.dart';
 import '../../providers/settings_provider.dart';
 
 class FiltroDialog extends StatefulWidget {
@@ -26,6 +27,7 @@ class _FiltroDialogState extends State<FiltroDialog> {
   late DateTime? _fechaInicio;
   late DateTime? _fechaFin;
   Evento? _eventoSeleccionado;
+  String? _puertaSeleccionada;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _FiltroDialogState extends State<FiltroDialog> {
     _fechaInicio = widget.filtroInicial.fechaInicio;
     _fechaFin = widget.filtroInicial.fechaFin;
     _eventoSeleccionado = widget.filtroInicial.evento;
+    _puertaSeleccionada = widget.filtroInicial.puerta;
   }
 
   @override
@@ -52,6 +55,8 @@ class _FiltroDialogState extends State<FiltroDialog> {
             _buildFechaSelector(),
             const SizedBox(height: 16),
             _buildEventoSelector(),
+            const SizedBox(height: 16),
+            _buildPuertaSelector(),
           ],
         ),
       ),
@@ -200,6 +205,31 @@ class _FiltroDialogState extends State<FiltroDialog> {
     );
   }
 
+  Widget _buildPuertaSelector() {
+    final puertas = PuertaService.puertas.map((p) => p.numero).toSet().toList()..sort();
+    
+    return DropdownButton<String?>(
+      value: _puertaSeleccionada,
+      hint: const Text('Todas las puertas'),
+      isExpanded: true,
+      items: [
+        const DropdownMenuItem<String?>(
+          value: null,
+          child: Text('Todas las puertas'),
+        ),
+        ...puertas.map((puerta) {
+          return DropdownMenuItem<String?>(
+            value: puerta,
+            child: Text('Puerta $puerta'),
+          );
+        }),
+      ],
+      onChanged: (value) {
+        setState(() => _puertaSeleccionada = value);
+      },
+    );
+  }
+
   Future<void> _seleccionarFechaUnica() async {
     final fecha = await showDatePicker(
       context: context,
@@ -253,6 +283,7 @@ class _FiltroDialogState extends State<FiltroDialog> {
       fechaInicio: _tipoRango == TipoRangoFecha.personalizado ? inicio : null,
       fechaFin: _tipoRango == TipoRangoFecha.personalizado ? fin : null,
       evento: _eventoSeleccionado,
+      puerta: _puertaSeleccionada,
     );
     final settings = context.read<SettingsProvider>();
     settings.setFiltro(filtro);

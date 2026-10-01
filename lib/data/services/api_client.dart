@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/constants/api_constants.dart';
 import '../../core/utils/app_logger.dart' as app_logger;
 import '../services/auth_interceptor.dart';
 import '../services/auth_token_storage.dart';
+import '../services/tls/tls_trust.dart';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -21,6 +23,16 @@ class ApiClient {
         'Accept': 'application/json',
       },
     ));
+
+    // La CA corporativa se registra desde initPlatformTls(). Sin esto el
+    // handshake falla con "unable to get local issuer certificate" porque estas
+    // peticiones salen por el BoringSSL de Dart, no por el stack de Android.
+    // createPlatformAdapter devuelve null en web o si no hay override, y en ese
+    // caso queda el adapter por defecto.
+    final adapter = createPlatformAdapter(ApiConstants.baseUrl);
+    if (adapter != null) {
+      _dio.httpClientAdapter = adapter;
+    }
 
     _dio.interceptors.addAll([
       AuthInterceptor(AuthTokenStorage(), _dio),
@@ -49,7 +61,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logRequest(options.method, options.uri, data: options.data);
     }
     handler.next(options);
@@ -57,7 +69,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logResponse(response.statusCode ?? 0, response.requestOptions.uri);
     }
     handler.next(response);
@@ -65,7 +77,7 @@ class _LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (ApiConstants.baseUrl.contains('10.11.6.48')) {
+    if (kDebugMode) {
       app_logger.log.logError(err.requestOptions.uri, err);
     }
     handler.next(err);
@@ -98,10 +110,13 @@ class _RetryInterceptor extends Interceptor {
     handler.next(err);
   }
 
+  /// Reintenta solo errores del servidor, nunca timeouts.
+  ///
+  /// Un timeout con `receiveTimeout: 90s` reintentado dos veces son casi tres
+  /// minutos de espera para terminar mostrando el mismo error. Peor: el
+  /// operador ve la app "colgada" y no sabe si crasheó o si está trabajando.
+  /// Un 5xx en cambio sí es transitorio y el reintento suele resolverlo.
   bool _shouldRetry(DioException err) {
-    return err.type == DioExceptionType.connectionTimeout ||
-        err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.sendTimeout ||
-        (err.response?.statusCode != null && err.response!.statusCode! >= 500);
+    return err.response?.statusCode != null && err.response!.statusCode! >= 500;
   }
 }
