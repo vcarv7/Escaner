@@ -31,12 +31,10 @@ class ValidationUtils {
     return ScanType.solapine;
   }
 
+  /// Devuelve el mensaje unificado de rechazo o `null` si el código es válido.
   static String? validateCode(String code) {
-    if (code.isEmpty) {
-      return 'El Solapin no puede estar vacío';
-    }
-    if (code.length < minLength || code.length > maxLength) {
-      return 'El Solapin debe tener entre $minLength y $maxLength caracteres';
+    if (code.isEmpty || code.length < minLength || code.length > maxLength) {
+      return AppConstants.solapinInvalidoMensaje;
     }
     return null;
   }

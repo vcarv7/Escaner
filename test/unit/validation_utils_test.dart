@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:escaner_1/core/constants/app_constants.dart';
 import 'package:escaner_1/core/utils/validation_utils.dart';
 import 'package:escaner_1/domain/entities/scan_record.dart';
 
@@ -109,20 +110,34 @@ void main() {
         expect(ValidationUtils.validateCode('ABC12'), isNull);
       });
 
-      test('returns error message for empty string', () {
-        expect(ValidationUtils.validateCode(''), equals('El Solapin no puede estar vacío'));
+      test('returns the unified message for empty string', () {
+        expect(
+          ValidationUtils.validateCode(''),
+          equals(AppConstants.solapinInvalidoMensaje),
+        );
       });
 
-      test('returns error message for short code', () {
-        expect(ValidationUtils.validateCode('AB'), equals('El Solapin debe tener entre 5 y 15 caracteres'));
+      test('returns the unified message for short code', () {
+        expect(
+          ValidationUtils.validateCode('AB'),
+          equals(AppConstants.solapinInvalidoMensaje),
+        );
       });
 
-      test('returns error message for long code', () {
-        expect(ValidationUtils.validateCode('ABC1234567890123'), equals('El Solapin debe tener entre 5 y 15 caracteres'));
+      test('returns the unified message for long code', () {
+        expect(
+          ValidationUtils.validateCode('ABC1234567890123'),
+          equals(AppConstants.solapinInvalidoMensaje),
+        );
       });
 
       test('returns null for valid tarjeta code', () {
         expect(ValidationUtils.validateCode('ABCDEF'), isNull);
+      });
+
+      test('the unified message spells Solapín with an accent', () {
+        expect(AppConstants.solapinInvalidoMensaje, contains('Solapín'));
+        expect(AppConstants.solapinInvalidoMensaje, isNot(contains('Solapin ')));
       });
     });
 

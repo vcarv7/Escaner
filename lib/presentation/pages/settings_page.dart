@@ -82,7 +82,11 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSyncCard(BuildContext context, PersonaProvider personaProvider, ColorScheme colorScheme) {
+  Widget _buildSyncCard(
+    BuildContext context,
+    PersonaProvider personaProvider,
+    ColorScheme colorScheme,
+  ) {
     // La sincronización es la ÚNICA operación que exige sesión: es la única que
     // habla con el servidor. El escaneo es local y sigue funcionando sin token.
     final haySesion = context.watch<AuthProvider>().isAuthenticated;
@@ -94,13 +98,16 @@ class SettingsPage extends StatelessWidget {
       if (errorMsg.contains('tiempo') || errorMsg.contains('timeout')) {
         errorColor = AppTheme.warning;
         errorIcon = Icons.access_time;
-      } else if (errorMsg.contains('conexión') || errorMsg.contains('sin conexión') || errorMsg.contains('red')) {
+      } else if (errorMsg.contains('conexión') ||
+          errorMsg.contains('sin conexión') ||
+          errorMsg.contains('red')) {
         errorColor = colorScheme.error;
         errorIcon = Icons.wifi_off;
       } else if (errorMsg.contains('servidor') || errorMsg.contains('500')) {
         errorColor = colorScheme.error;
         errorIcon = Icons.error_outline;
-      } else if (errorMsg.contains('no autorizado') || errorMsg.contains('sesión expirada')) {
+      } else if (errorMsg.contains('no autorizado') ||
+          errorMsg.contains('sesión expirada')) {
         errorColor = AppTheme.warning;
         errorIcon = Icons.lock_outline;
       } else if (errorMsg.contains('acceso denegado')) {
@@ -119,7 +126,11 @@ class SettingsPage extends StatelessWidget {
         children: [
           Text(
             'Lista de personas',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -137,7 +148,10 @@ class SettingsPage extends StatelessWidget {
                           'Sincronización completada (${personaProvider.totalCount} personas)',
                         );
                       } else {
-                        OverlayMessage.error(context, personaProvider.error ?? 'Error al sincronizar');
+                        OverlayMessage.error(
+                          context,
+                          personaProvider.error ?? 'Error al sincronizar',
+                        );
                       }
                     },
               icon: personaProvider.isSyncing
@@ -151,22 +165,28 @@ class SettingsPage extends StatelessWidget {
                 personaProvider.isSyncing
                     ? 'Sincronizando...'
                     : haySesion
-                        ? 'Sincronizar ahora'
-                        : 'Inicia sesión para sincronizar',
+                    ? 'Sincronizar ahora'
+                    : 'Inicia sesión para sincronizar',
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
           if (!haySesion) ...[
             const SizedBox(height: 8),
             Semantics(
-              label: 'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando.',
+              label:
+                  'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando.',
               child: Text(
-                'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando con la lista local.',
-                style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+                'El escaneo sigue funcionando con la lista local.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
             ),
           ],
@@ -176,18 +196,27 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Última sincronización: ${_formatDateTime(personaProvider.lastSync!)}',
-              style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
             Text(
               '${personaProvider.totalCount} personas cargadas',
-              style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ] else if (personaProvider.hasPersonas) ...[
             _divider(colorScheme),
             const SizedBox(height: 8),
             Text(
               '${personaProvider.totalCount} personas en caché local',
-              style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ],
           if (personaProvider.error != null) ...[
@@ -222,7 +251,11 @@ class SettingsPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.dark_mode_outlined, size: 28, color: colorScheme.onSurface),
+              Icon(
+                Icons.dark_mode_outlined,
+                size: 28,
+                color: colorScheme.onSurface,
+              ),
               const SizedBox(width: 18),
               Text(
                 'Tema oscuro',
@@ -241,7 +274,10 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFeedbackCard(SettingsProvider settings, ColorScheme colorScheme) {
+  Widget _buildFeedbackCard(
+    SettingsProvider settings,
+    ColorScheme colorScheme,
+  ) {
     return _buildCard(
       colorScheme,
       Column(
@@ -298,7 +334,9 @@ class SettingsPage extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 17,
-                color: isSelected ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.7),
+                color: isSelected
+                    ? colorScheme.onSurface
+                    : colorScheme.onSurface.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -307,7 +345,11 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountCard(BuildContext context, AuthProvider auth, ColorScheme colorScheme) {
+  Widget _buildAccountCard(
+    BuildContext context,
+    AuthProvider auth,
+    ColorScheme colorScheme,
+  ) {
     return _buildCard(
       colorScheme,
       Column(
@@ -316,12 +358,19 @@ class SettingsPage extends StatelessWidget {
           if (auth.username != null) ...[
             Text(
               'Sesión iniciada como',
-              style: TextStyle(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               auth.username!,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: colorScheme.onSurface),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -329,12 +378,17 @@ class SettingsPage extends StatelessWidget {
             width: double.infinity,
             child: OutlinedButton.icon(
               key: const ValueKey('settings_logout_button'),
-              onPressed: () => LogoutDialog.show(context, onConfirm: () => _handleLogout(context)),
+              onPressed: () => LogoutDialog.show(
+                context,
+                onConfirm: () => _handleLogout(context),
+              ),
               icon: const Icon(Icons.logout_rounded),
               label: const Text('Cerrar sesión'),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 foregroundColor: colorScheme.error,
                 side: BorderSide(color: colorScheme.error),
               ),
@@ -362,8 +416,14 @@ class SettingsPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Versión', style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
-              Text(AppConstants.appVersion, style: TextStyle(fontSize: 16, color: colorScheme.onSurface)),
+              Text(
+                'Versión',
+                style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+              ),
+              Text(
+                AppConstants.appVersion,
+                style: TextStyle(fontSize: 16, color: colorScheme.onSurface),
+              ),
             ],
           ),
           const SizedBox(height: 16),
