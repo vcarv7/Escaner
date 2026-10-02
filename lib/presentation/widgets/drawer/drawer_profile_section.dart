@@ -18,7 +18,9 @@ class DrawerProfileSection extends StatelessWidget {
       builder: (context, auth, _) {
         final isInitializing = auth.isInitializing;
         final isAuthenticated = auth.isAuthenticated;
-        final userName = auth.username ?? 'Invitado';
+        // "Invitado" con "Sesión activa" sería contradictorio: pasa cuando hay
+        // sesión pero el nombre no se pudo recuperar del almacenamiento.
+        final userName = auth.username ?? (isAuthenticated ? 'Operador' : 'Invitado');
         final userEmail = isInitializing
             ? 'Verificando sesión...'
             : isAuthenticated

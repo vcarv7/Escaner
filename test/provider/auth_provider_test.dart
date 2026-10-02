@@ -162,7 +162,7 @@ void main() {
 test('éxito: guarda tokens, setea autenticado', () async {
         final result = await authProvider.login('user', 'pass');
 
-        expect(result, isTrue);
+        expect(result.success, isTrue);
         expect(authProvider.isAuthenticated, isTrue);
         expect(authProvider.username, equals('user'));
         // El saveTokens se llama dentro de authApi.login, no en el provider
@@ -178,9 +178,87 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         final result = await authProvider.login('user', 'wrong');
 
-        expect(result, isFalse);
+        expect(result.success, isFalse);
         expect(authProvider.isAuthenticated, isFalse);
-        expect(authProvider.error, contains('Credenciales inválidas'));
+        expect(result.error, contains('Credenciales inválidas'));
+      });
+
+      test('401 con statusCode se reporta como credenciales incorrectas', () async {
+        // El test anterior lanza la excepción SIN statusCode, así que nunca
+        // entra por la rama del 401. Esta es la rama que convierte cualquier 401
+        // en "contraseña incorrecta", y la que hace que un 401 emitido por un
+        // proxy con la aplicación caída culpe al operador.
+        when(mockAuthApi.login('user', 'correcta', cancelToken: anyNamed('cancelToken')))
+            .thenThrow(AppException(
+          type: AppErrorType.unauthorized,
+          message: 'Sesión expirada. Inicia sesión nuevamente.',
+          statusCode: 401,
+        ));
+
+        final result = await authProvider.login('user', 'correcta');
+
+        expect(result.success, isFalse);
+        expect(result.error, 'Usuario o contraseña incorrectos');
+      });
+
+      test('un error de conexión NO se reporta como credenciales incorrectas', () async {
+        // Este es el síntoma reportado con el servidor caído: la app culpaba al
+        // operador. El datasource ahora aborta antes del POST cuando el probe
+        // de CSRF falla, así que este mensaje debe llegarle al operador tal cual.
+        when(mockAuthApi.login('user', 'correcta', cancelToken: anyNamed('cancelToken')))
+            .thenThrow(AppException.noConnection(
+          'No se puede conectar con el servidor. Verifica la red o contacta a soporte.',
+        ));
+
+        final result = await authProvider.login('user', 'correcta');
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('No se puede conectar con el servidor'));
+        expect(result.error, isNot(contains('incorrectos')));
+      });
+
+      test('cada intento lleva su propio error, sin estado compartido', () async {
+        when(mockAuthApi.login('user', 'wrong', cancelToken: anyNamed('cancelToken')))
+            .thenThrow(AppException(
+          type: AppErrorType.unauthorized,
+          message: 'Credenciales inválidas',
+        ));
+
+        final fallido = await authProvider.login('user', 'wrong');
+
+        expect(fallido.success, isFalse);
+        expect(fallido.error, contains('Credenciales inválidas'));
+
+        when(mockAuthApi.login('user', 'bien', cancelToken: anyNamed('cancelToken')))
+            .thenAnswer((_) async => AuthTokens(
+                  accessToken: 'a',
+                  refreshToken: 'r',
+                  expiresIn: 3600,
+                  tokenType: 'Bearer',
+                ));
+
+        final exitoso = await authProvider.login('user', 'bien');
+
+        // El error viaja con el resultado, así que un login bueno no puede
+        // devolver el mensaje del anterior ni pisarlo.
+        expect(exitoso.success, isTrue);
+        expect(exitoso.error, isNull);
+        expect(exitoso.cancelled, isFalse);
+      });
+
+      test('una cancelación no se reporta como error', () async {
+        // Solo la dispara el CancelToken de la pantalla (doble submit o salida).
+        // Antes terminaba en el toast como "Petición cancelada.".
+        when(mockAuthApi.login('user', 'pass', cancelToken: anyNamed('cancelToken')))
+            .thenThrow(DioException(
+          requestOptions: RequestOptions(path: '/'),
+          type: DioExceptionType.cancel,
+        ));
+
+        final result = await authProvider.login('user', 'pass');
+
+        expect(result.cancelled, isTrue);
+        expect(result.error, isNull);
       });
 
       test('falla red: setea error de conexión', () async {
@@ -192,8 +270,8 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         final result = await authProvider.login('user', 'pass');
 
-        expect(result, isFalse);
-        expect(authProvider.error, contains('Sin conexión'));
+        expect(result.success, isFalse);
+        expect(result.error, contains('Sin conexión'));
       });
 
       test('falla timeout: setea error de timeout', () async {
@@ -202,17 +280,18 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         final result = await authProvider.login('user', 'pass');
 
-        expect(result, isFalse);
-        expect(authProvider.error, contains('Tiempo agotado'));
+        expect(result.success, isFalse);
+        expect(result.error, contains('Tiempo agotado'));
       });
 
-      test('credenciales vacías: devuelve false con error', () async {
+      test('credenciales vacías: devuelve failure con error', () async {
         final result1 = await authProvider.login('', 'pass');
         final result2 = await authProvider.login('user', '');
 
-        expect(result1, isFalse);
-        expect(result2, isFalse);
-        expect(authProvider.error, contains('requeridos'));
+        expect(result1.success, isFalse);
+        expect(result2.success, isFalse);
+        expect(result1.error, contains('requeridos'));
+        expect(result2.error, contains('requeridos'));
       });
 
       test('notifica a listeners en login exitoso y fallido', () async {
@@ -233,7 +312,6 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         expect(authProvider.isAuthenticated, isFalse);
         expect(authProvider.username, isNull);
-        expect(authProvider.error, isNull);
         verify(mockTokenStorage.clear()).called(1);
       });
 
@@ -267,7 +345,6 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         expect(authProvider.isAuthenticated, isFalse);
         expect(authProvider.username, isNull);
-        expect(authProvider.error, contains('expiró'));
       });
 
       test('notifica a listeners al recibir el evento', () async {
@@ -282,12 +359,12 @@ test('éxito: guarda tokens, setea autenticado', () async {
         expect(notifyCount, greaterThanOrEqualTo(1));
       });
 
-      test('login() posterior limpia el mensaje de sesión expirada', () async {
+      test('login() posterior vuelve a autenticar', () async {
         await autenticar();
 
         SessionEvents.instance.notifyExpired();
         await pumpEventQueue();
-        expect(authProvider.error, isNotNull);
+        expect(authProvider.isAuthenticated, isFalse);
 
         final mockTokens = MockAuthTokens();
         when(mockTokens.accessToken).thenReturn('access_token');
@@ -300,8 +377,7 @@ test('éxito: guarda tokens, setea autenticado', () async {
 
         final result = await authProvider.login('user', 'pass');
 
-        expect(result, isTrue);
-        expect(authProvider.error, isNull);
+        expect(result.success, isTrue);
         expect(authProvider.isAuthenticated, isTrue);
       });
 
@@ -326,7 +402,6 @@ test('éxito: guarda tokens, setea autenticado', () async {
         expect(authProvider.isAuthenticated, isFalse);
         expect(authProvider.isLoading, isFalse);
         expect(authProvider.username, isNull);
-        expect(authProvider.error, isNull);
       });
 
       test('setea isLoading durante tryAutoLogin', () async {
@@ -362,9 +437,9 @@ test('éxito: guarda tokens, setea autenticado', () async {
         when(mockAuthApi.login('user', 'pass', cancelToken: anyNamed('cancelToken')))
             .thenThrow(AppException.timeout('Tiempo de espera agotado. Verifica tu conexión.'));
 
-        await authProvider.login('user', 'pass');
+        final result = await authProvider.login('user', 'pass');
 
-        expect(authProvider.error, contains('Tiempo de espera'));
+        expect(result.error, contains('Tiempo de espera'));
       });
 
       test('mapea no connection correctamente', () async {
@@ -374,9 +449,9 @@ test('éxito: guarda tokens, setea autenticado', () async {
           type: DioExceptionType.connectionError,
         ));
 
-        await authProvider.login('user', 'pass');
+        final result = await authProvider.login('user', 'pass');
 
-        expect(authProvider.error, contains('Sin conexión'));
+        expect(result.error, contains('Sin conexión'));
       });
 
       test('mapea server error correctamente', () async {
@@ -386,9 +461,9 @@ test('éxito: guarda tokens, setea autenticado', () async {
           message: 'Error del servidor',
         ));
 
-        await authProvider.login('user', 'pass');
+        final result = await authProvider.login('user', 'pass');
 
-        expect(authProvider.error, contains('servidor'));
+        expect(result.error, contains('servidor'));
       });
     });
   });

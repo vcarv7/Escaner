@@ -7,6 +7,35 @@ import '../../data/services/api_client.dart';
 import '../../data/services/session_events.dart';
 import '../../core/errors/app_exception.dart';
 
+/// Resultado de un intento de login.
+///
+/// El error viaja con el resultado en vez de quedar en un campo compartido del
+/// provider: así el toast que se muestra corresponde a su propia request y un
+/// login concurrente no puede pisar el mensaje de otro.
+///
+/// `cancelled` es un estado aparte y no un error: solo lo dispara el
+/// `CancelToken` de esta pantalla (doble submit o salida de la página), nunca
+/// es algo que el operador pueda corregir, así que no se le muestra nada.
+class LoginResult {
+  final bool success;
+  final String? error;
+  final bool cancelled;
+
+  const LoginResult.success()
+      : success = true,
+        error = null,
+        cancelled = false;
+
+  const LoginResult.failure(String this.error)
+      : success = false,
+        cancelled = false;
+
+  const LoginResult.cancelled()
+      : success = false,
+        error = null,
+        cancelled = true;
+}
+
 class AuthProvider extends ChangeNotifier {
   final AuthApiDatasource _authApi;
   final AuthTokenStorage _tokenStorage;
@@ -16,7 +45,6 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   bool _isInitializing = true;
-  String? _error;
 
   /// Log del ciclo de auto-login. Es la unica forma de saber por que la
   /// sesion murio sin depender de credenciales para reproducir.
@@ -28,7 +56,6 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   bool get isInitializing => _isInitializing;
-  String? get error => _error;
 
   AuthProvider({
     AuthApiDatasource? authApi,
@@ -51,7 +78,6 @@ class AuthProvider extends ChangeNotifier {
   void _onSessionExpired() {
     _isAuthenticated = false;
     _username = null;
-    _error = 'Tu sesión expiró. Inicia sesión nuevamente.';
     notifyListeners();
   }
 
@@ -62,7 +88,6 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> tryAutoLogin() async {
     _isLoading = true;
-    _error = null;
     notifyListeners();
 
     try {
@@ -130,15 +155,13 @@ class AuthProvider extends ChangeNotifier {
       e is AppException &&
       (e.type == AppErrorType.unauthorized || e.type == AppErrorType.forbidden);
 
-  Future<bool> login(String username, String password, {bool rememberMe = false, CancelToken? cancelToken}) async {
+  Future<LoginResult> login(String username, String password, {CancelToken? cancelToken}) async {
     if (username.trim().isEmpty || password.trim().isEmpty) {
-      _error = 'Usuario y contraseña son requeridos';
       notifyListeners();
-      return false;
+      return const LoginResult.failure('Usuario y contraseña son requeridos');
     }
 
     _isLoading = true;
-    _error = null;
     notifyListeners();
 
     try {
@@ -146,54 +169,61 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = true;
       _username = username.trim();
 
-      if (rememberMe) {
-        await _tokenStorage.saveUsername(username.trim());
-        await _tokenStorage.saveRememberMe(true);
-      } else {
-        await _tokenStorage.clearUsername();
-        await _tokenStorage.saveRememberMe(false);
-      }
+      // El nombre se guarda siempre: no promete sesión, solo evita que el
+      // operador lo escriba en cada arranque.
+      await _tokenStorage.saveUsername(username.trim());
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return const LoginResult.success();
     } on AppException catch (e) {
       // En el login un 401 no es "sesión expirada": son credenciales malas.
       // El mensaje genérico de sesión expirada hace pensar al operador que
       // su sesión se cayó y lo manda a reiniciar algo que no se cayó.
-      _error = e.statusCode == 401 ? 'Usuario o contraseña incorrectos' : _mapError(e);
+      final error = e.statusCode == 401
+          ? 'Usuario o contraseña incorrectos'
+          : _mapError(e);
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return LoginResult.failure(error);
     } on TimeoutException catch (e) {
       final appEx = AppException.timeout(e.message);
-      _error = _mapError(appEx);
+      final error = _mapError(appEx);
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return LoginResult.failure(error);
     } on DioException catch (e) {
+      // Una cancelación solo la produce el CancelToken de la pantalla de login.
+      // No es un fallo que el operador pueda corregir, así que no se convierte en
+      // un mensaje de error.
+      if (e.type == DioExceptionType.cancel) {
+        _isAuthenticated = false;
+        _isLoading = false;
+        notifyListeners();
+        return const LoginResult.cancelled();
+      }
       final appEx = AppException.fromDioException(e);
-      _error = _mapError(appEx);
+      final error = _mapError(appEx);
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return LoginResult.failure(error);
     } catch (e) {
       final appEx = AppException(
         type: AppErrorType.unknown,
         message: 'Error: ${e.toString().replaceFirst('Exception: ', '')}',
       );
-      _error = _mapError(appEx);
+      final error = _mapError(appEx);
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
       notifyListeners();
-      return false;
+      return LoginResult.failure(error);
     }
   }
 
@@ -201,7 +231,6 @@ class AuthProvider extends ChangeNotifier {
     await _tokenStorage.clear();
     _isAuthenticated = false;
     _username = null;
-    _error = null;
     notifyListeners();
   }
 

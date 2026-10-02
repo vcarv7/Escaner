@@ -22,28 +22,27 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameFocus = FocusNode();
   final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+
+  /// Token del login en vuelo. Vive en un campo, y no como variable local de
+  /// `_handleLogin`, únicamente para que `dispose` pueda cancelarlo si el
+  /// operador sale de la pantalla a mitad de la petición.
   CancelToken? _loginCancelToken;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedCredentials();
+    _prellenarUsuario();
   }
 
-  Future<void> _loadSavedCredentials() async {
-    final tokenStorage = AuthTokenStorage();
-    final username = await tokenStorage.getUsername();
-    final rememberMe = await tokenStorage.getRememberMe();
-
+  /// Solo el usuario: no hay checkbox de sesión porque el almacenamiento seguro
+  /// no sobrevive al arranque en frío, y ofrecer "Recordarme" sería prometer algo
+  /// que la app no cumple. Guardar el nombre no promete nada y ahorra escribirlo.
+  Future<void> _prellenarUsuario() async {
+    final username = await AuthTokenStorage().getUsername();
     if (!mounted) return;
-
-    setState(() {
-      if (username != null) {
-        _usernameController.text = username;
-      }
-      _rememberMe = rememberMe;
-    });
+    if (username != null && username.isNotEmpty) {
+      _usernameController.text = username;
+    }
   }
 
   @override
@@ -57,30 +56,42 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    _loginCancelToken?.cancel();
-    _loginCancelToken = CancelToken();
-
     final authProvider = context.read<AuthProvider>();
 
-    bool success = false;
+    // Un solo login en vuelo. Sin esto, el "done" del teclado dispara un segundo
+    // _handleLogin que cancela el primero: el operador veía un toast rojo de
+    // "Petición cancelada." junto al verde de "Bienvenido". El botón ya está
+    // protegido con isLoading, pero el onFieldSubmitted del campo de contraseña
+    // no lo estaba, y esta guarda es la que cubre los dos caminos.
+    if (authProvider.isLoading) return;
 
+    if (!_formKey.currentState!.validate()) return;
+
+    final cancelToken = CancelToken();
+    _loginCancelToken = cancelToken;
+
+    LoginResult result;
     try {
-      success = await authProvider.login(
+      result = await authProvider.login(
         _usernameController.text.trim(),
         _passwordController.text,
-        rememberMe: _rememberMe,
-        cancelToken: _loginCancelToken,
+        cancelToken: cancelToken,
       );
     } finally {
-      _loginCancelToken?.cancel();
-      _loginCancelToken = null;
+      // Solo se libera si el token sigue siendo el nuestro: el de un login
+      // posterior tiene que sobrevivir a este finally.
+      if (identical(_loginCancelToken, cancelToken)) {
+        _loginCancelToken = null;
+      }
+      cancelToken.cancel();
     }
 
     if (!mounted) return;
 
-    if (success) {
+    // Una cancelación no es un error del operador: no se le muestra nada.
+    if (result.cancelled) return;
+
+    if (result.success) {
       unawaited(context.read<PersonaProvider>().loadFromCache());
       OverlayMessage.success(
         context,
@@ -88,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
       );
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
-      OverlayMessage.error(context, authProvider.error ?? 'Error al iniciar sesión');
+      OverlayMessage.error(context, result.error ?? 'Error al iniciar sesión');
     }
   }
 
@@ -115,8 +126,6 @@ class _LoginPageState extends State<LoginPage> {
                     _buildForm(colorScheme),
                     const SizedBox(height: 24),
                     _buildLoginButton(colorScheme, authProvider),
-                    const SizedBox(height: 16),
-                    _buildRememberMe(),
                     const SizedBox(height: 24),
                     _buildFooter(colorScheme),
                   ],
@@ -243,28 +252,6 @@ class _LoginPageState extends State<LoginPage> {
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  Widget _buildRememberMe() {
-    return Semantics(
-      label: 'Recordarme - mantener sesión iniciada',
-      child: InkWell(
-        onTap: () => setState(() => _rememberMe = !_rememberMe),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Checkbox(
-                value: _rememberMe,
-                onChanged: (value) => setState(() => _rememberMe = value ?? false),
-              ),
-              const Text('Recordarme'),
-            ],
-          ),
-        ),
       ),
     );
   }

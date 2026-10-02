@@ -18,9 +18,6 @@ class FakeAuthProvider implements AuthProvider {
   bool get isAuthenticated => false;
 
   @override
-  String? get error => null;
-
-  @override
   void addListener(VoidCallback listener) {}
 
   @override

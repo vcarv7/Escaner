@@ -7,7 +7,6 @@ class AuthTokenStorage {
   static const _keyExpiresAt = 'token_expires_at';
   static const _keyUsername = 'username';
   static const _keyUserData = 'user_data';
-  static const _keyRememberMe = 'remember_me';
 
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
@@ -62,19 +61,6 @@ class AuthTokenStorage {
     await _storage.write(key: _keyUsername, value: username);
   }
 
-  Future<void> clearUsername() async {
-    await _storage.delete(key: _keyUsername);
-  }
-
-  Future<void> saveRememberMe(bool value) async {
-    await _storage.write(key: _keyRememberMe, value: value.toString());
-  }
-
-  Future<bool> getRememberMe() async {
-    final value = await _storage.read(key: _keyRememberMe);
-    return value == 'true';
-  }
-
   Future<void> clear() async {
     await Future.wait([
       _storage.delete(key: _keyAccessToken),
@@ -82,7 +68,6 @@ class AuthTokenStorage {
       _storage.delete(key: _keyExpiresAt),
       _storage.delete(key: _keyUsername),
       _storage.delete(key: _keyUserData),
-      _storage.delete(key: _keyRememberMe),
     ]);
   }
 }
