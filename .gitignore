@@ -56,3 +56,4 @@ test/*.mocks.dart
 # Release signing (NEVER commit secrets / keystore)
 /android/key.properties
 /android/keystore/
+.atl/
