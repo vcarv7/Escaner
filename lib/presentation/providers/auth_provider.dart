@@ -17,7 +17,6 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitializing = true;
   String? _error;
-  String? _technicalError;
 
   /// Log del ciclo de auto-login. Es la unica forma de saber por que la
   /// sesion murio sin depender de credenciales para reproducir.
@@ -30,7 +29,6 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitializing => _isInitializing;
   String? get error => _error;
-  String? get technicalError => _technicalError;
 
   AuthProvider({
     AuthApiDatasource? authApi,
@@ -65,7 +63,6 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> tryAutoLogin() async {
     _isLoading = true;
     _error = null;
-    _technicalError = null;
     notifyListeners();
 
     try {
@@ -122,7 +119,6 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
-      _technicalError = null;
       notifyListeners();
       return false;
     } finally {
@@ -166,7 +162,6 @@ class AuthProvider extends ChangeNotifier {
       // El mensaje genérico de sesión expirada hace pensar al operador que
       // su sesión se cayó y lo manda a reiniciar algo que no se cayó.
       _error = e.statusCode == 401 ? 'Usuario o contraseña incorrectos' : _mapError(e);
-      _technicalError = e.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -175,7 +170,6 @@ class AuthProvider extends ChangeNotifier {
     } on TimeoutException catch (e) {
       final appEx = AppException.timeout(e.message);
       _error = _mapError(appEx);
-      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -184,7 +178,6 @@ class AuthProvider extends ChangeNotifier {
     } on DioException catch (e) {
       final appEx = AppException.fromDioException(e);
       _error = _mapError(appEx);
-      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -194,10 +187,8 @@ class AuthProvider extends ChangeNotifier {
       final appEx = AppException(
         type: AppErrorType.unknown,
         message: 'Error: ${e.toString().replaceFirst('Exception: ', '')}',
-        technicalMessage: e.toString(),
       );
       _error = _mapError(appEx);
-      _technicalError = appEx.technicalMessage;
       _isAuthenticated = false;
       _username = null;
       _isLoading = false;
@@ -211,7 +202,6 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = false;
     _username = null;
     _error = null;
-    _technicalError = null;
     notifyListeners();
   }
 

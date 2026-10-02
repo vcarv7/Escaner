@@ -88,11 +88,7 @@ class _LoginPageState extends State<LoginPage> {
       );
       Navigator.of(context).popUntil((route) => route.isFirst);
     } else {
-      OverlayMessage.error(
-        context,
-        authProvider.error ?? 'Error al iniciar sesión',
-        technicalDetail: authProvider.technicalError,
-      );
+      OverlayMessage.error(context, authProvider.error ?? 'Error al iniciar sesión');
     }
   }
 
@@ -217,10 +213,10 @@ class _LoginPageState extends State<LoginPage> {
             filled: true,
           ),
           validator: (value) {
-            if (value == null || value.isEmpty) {
+            if (value == null || value.trim().isEmpty) {
               return 'La contraseña es requerida';
             }
-            if (value.length < 4) {
+            if (value.trim().length < 4) {
               return 'La contraseña debe tener al menos 4 caracteres';
             }
             return null;
@@ -279,7 +275,7 @@ class _LoginPageState extends State<LoginPage> {
         Divider(color: colorScheme.outlineVariant),
         const SizedBox(height: 16),
         Text(
-          'Versión 0.8.5+1',
+          'Versión ${AppConstants.appVersion}',
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),

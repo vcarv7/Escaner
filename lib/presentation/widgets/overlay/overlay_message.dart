@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class OverlayMessage {
-  static const Duration defaultDuration = Duration(seconds: 2);
+  static const Duration defaultDuration = Duration(seconds: 3);
   static const double elevation = 8.0;
   static const double radius = 12.0;
   static const double paddingH = 32.0;
@@ -12,7 +12,6 @@ class OverlayMessage {
     String message,
     Color backgroundColor, {
     Duration? duration,
-    String? technicalDetail,
   }) {
     final overlay = Overlay.of(context);
 
@@ -23,7 +22,6 @@ class OverlayMessage {
         backgroundColor: backgroundColor,
         duration: duration ?? defaultDuration,
         onDismiss: () => entry.remove(),
-        technicalDetail: technicalDetail,
       ),
     );
 
@@ -38,12 +36,8 @@ class OverlayMessage {
     show(context, message, Colors.orange);
   }
 
-  static void error(
-    BuildContext context,
-    String message, {
-    String? technicalDetail,
-  }) {
-    show(context, message, Colors.red, technicalDetail: technicalDetail);
+  static void error(BuildContext context, String message) {
+    show(context, message, Colors.red);
   }
 
   static void info(BuildContext context, String message) {
@@ -56,14 +50,12 @@ class _OverlayMessageWidget extends StatefulWidget {
   final Color backgroundColor;
   final Duration duration;
   final VoidCallback onDismiss;
-  final String? technicalDetail;
 
   const _OverlayMessageWidget({
     required this.message,
     required this.backgroundColor,
     required this.duration,
     required this.onDismiss,
-    this.technicalDetail,
   });
 
   @override
@@ -101,16 +93,11 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
 
     _controller.forward();
 
-    // Con detalle técnico el aviso no se autoclosa: hay que darle tiempo a
-    // expandirlo y leerlo. Sin detalle mantiene los 2 s de siempre.
-    final detalle = widget.technicalDetail;
-    if (detalle == null || detalle.isEmpty) {
-      Future.delayed(widget.duration, () {
-        if (mounted) {
-          _controller.reverse().then((_) => _dismiss());
-        }
-      });
-    }
+    Future.delayed(widget.duration, () {
+      if (mounted) {
+        _controller.reverse().then((_) => _dismiss());
+      }
+    });
   }
 
   @override
@@ -145,66 +132,14 @@ class _OverlayMessageWidgetState extends State<_OverlayMessageWidget>
                 child: GestureDetector(
                   onTap: _dismiss,
                   behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        widget.message,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (widget.technicalDetail != null &&
-                          widget.technicalDetail!.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Theme(
-                          data: Theme.of(
-                            context,
-                          ).copyWith(dividerColor: Colors.white54),
-                          child: ExpansionTile(
-                            tilePadding: EdgeInsets.zero,
-                            childrenPadding: const EdgeInsets.only(top: 8),
-                            title: const Text(
-                              'Detalle técnico',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            trailing: const Icon(
-                              Icons.expand_more,
-                              color: Colors.white70,
-                              size: 18,
-                            ),
-                            children: [
-                              SelectableText(
-                                widget.technicalDetail!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tocá la notificación para cerrarla',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            fontStyle: FontStyle.italic,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ],
+                  child: Text(
+                    widget.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),
