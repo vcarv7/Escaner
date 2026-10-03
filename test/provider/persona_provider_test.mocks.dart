@@ -5,6 +5,7 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
+import 'package:dio/dio.dart' as _i6;
 import 'package:escaner_1/data/services/persona_cache_service.dart' as _i5;
 import 'package:escaner_1/domain/entities/persona.dart' as _i4;
 import 'package:escaner_1/domain/repositories/persona_repository.dart' as _i2;
@@ -50,13 +51,22 @@ class MockPersonaRepository extends _i1.Mock implements _i2.PersonaRepository {
           as _i3.Future<List<_i4.Persona>>);
 
   @override
-  _i3.Future<_i2.PersonaSyncResult> syncPersonas() =>
+  _i3.Future<_i2.PersonaSyncResult> syncPersonas({
+    _i2.SyncProgressCallback? onProgress,
+    _i6.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#syncPersonas, []),
+            Invocation.method(#syncPersonas, [], {
+              #onProgress: onProgress,
+              #cancelToken: cancelToken,
+            }),
             returnValue: _i3.Future<_i2.PersonaSyncResult>.value(
               _FakePersonaSyncResult_0(
                 this,
-                Invocation.method(#syncPersonas, []),
+                Invocation.method(#syncPersonas, [], {
+                  #onProgress: onProgress,
+                  #cancelToken: cancelToken,
+                }),
               ),
             ),
           )

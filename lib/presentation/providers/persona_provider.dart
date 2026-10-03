@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import '../../domain/entities/persona.dart';
@@ -27,19 +28,39 @@ class PersonaProvider extends ChangeNotifier {
   Map<String, Persona> _bySolapin = {};
   bool _isLoading = false;
   bool _isSyncing = false;
+  bool _isCancelling = false;
+  bool _syncWasCancelled = false;
   String? _error;
   DateTime? _lastSync;
   int _totalCount = 0;
   PersonaListStatus _status = PersonaListStatus.cargando;
 
+  // Progreso de la sincronización en curso. `syncProgress == null`
+  // significa "conectando" (página 1 aún sin responder, total desconocido).
+  double? _syncProgress;
+  int _syncPaginaActual = 0;
+  int _syncTotalPaginas = 0;
+  int _syncRecibidos = 0;
+  Duration _syncElapsed = Duration.zero;
+  DateTime? _syncStartedAt;
+  CancelToken? _syncCancelToken;
+  Timer? _elapsedTimer;
+
   List<Persona> get personas => List.unmodifiable(_personas);
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
+  bool get isCancelling => _isCancelling;
+  bool get syncWasCancelled => _syncWasCancelled;
   String? get error => _error;
   DateTime? get lastSync => _lastSync;
   int get totalCount => _totalCount;
   bool get hasPersonas => _personas.isNotEmpty;
   PersonaListStatus get status => _status;
+  double? get syncProgress => _syncProgress;
+  int get syncPaginaActual => _syncPaginaActual;
+  int get syncTotalPaginas => _syncTotalPaginas;
+  int get syncRecibidos => _syncRecibidos;
+  Duration get syncElapsed => _syncElapsed;
 
   /// Escanear contra una lista vacía marca a todo el mundo como inactivo
   /// (ver `ScanProvider.processScan`), así que la UI debe bloquearlo en vez
@@ -90,27 +111,67 @@ class PersonaProvider extends ChangeNotifier {
     if (_isSyncing) return false;
 
     _isSyncing = true;
+    _isCancelling = false;
+    _syncWasCancelled = false;
     _error = null;
+    _syncProgress = null;
+    _syncPaginaActual = 0;
+    _syncTotalPaginas = 0;
+    _syncRecibidos = 0;
+    _syncElapsed = Duration.zero;
+    _syncStartedAt = DateTime.now();
+    _syncCancelToken = CancelToken();
     notifyListeners();
 
+    _elapsedTimer?.cancel();
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!_isSyncing) return;
+      final started = _syncStartedAt;
+      if (started != null) {
+        _syncElapsed = DateTime.now().difference(started);
+        notifyListeners();
+      }
+    });
+
     try {
-      final result = await _repository.syncPersonas();
+      final result = await _repository.syncPersonas(
+        cancelToken: _syncCancelToken,
+        onProgress: ({
+          required int paginaActual,
+          required int totalPaginas,
+          required int recibidos,
+        }) {
+          _syncPaginaActual = paginaActual;
+          _syncTotalPaginas = totalPaginas;
+          _syncRecibidos = recibidos;
+          _syncProgress = totalPaginas > 0
+              ? (paginaActual / totalPaginas).clamp(0.0, 1.0)
+              : null;
+          notifyListeners();
+        },
+      );
       _personas = result.personas;
       _buildIndexes(_personas);
       _totalCount = result.totalCount;
       _lastSync = result.syncedAt;
-      _status = _personas.isNotEmpty ? PersonaListStatus.lista : PersonaListStatus.vacia;
-      _isSyncing = false;
-      notifyListeners();
+      _status = _personas.isNotEmpty
+          ? PersonaListStatus.lista
+          : PersonaListStatus.vacia;
       return true;
     } on AppException catch (e) {
+      if (e.type == AppErrorType.requestCancelled) {
+        // Cancelación del usuario: no es error, se conserva la lista previa.
+        _error = null;
+        _syncWasCancelled = true;
+        return false;
+      }
       _error = _mapError(e);
       if (_personas.isNotEmpty) {
-        _isSyncing = false;
-        notifyListeners();
         return false;
       }
       _status = PersonaListStatus.error;
+      // Último recurso: disco local. Desde el modo solo-manual
+      // `getAllPersonas()` jamás toca red, así que no hay recursión.
       try {
         final cache = await _repository.getAllPersonas();
         if (cache.isNotEmpty) {
@@ -118,26 +179,49 @@ class PersonaProvider extends ChangeNotifier {
           _buildIndexes(_personas);
           _totalCount = cache.length;
           _status = PersonaListStatus.lista;
-          _isSyncing = false;
-          notifyListeners();
           return false;
         }
       } catch (_) {}
-      _isSyncing = false;
-      notifyListeners();
+      return false;
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        _error = null;
+        _syncWasCancelled = true;
+        return false;
+      }
+      _error = _mapError(AppException.fromDioException(e));
+      if (_personas.isEmpty) _status = PersonaListStatus.error;
       return false;
     } on TimeoutException catch (e) {
       _error = _mapError(AppException.timeout(e.message));
       if (_personas.isEmpty) _status = PersonaListStatus.error;
-      _isSyncing = false;
-      notifyListeners();
       return false;
     } catch (e) {
       _error = _mapError(Exception(e.toString()));
       if (_personas.isEmpty) _status = PersonaListStatus.error;
-      _isSyncing = false;
-      notifyListeners();
       return false;
+    } finally {
+      _elapsedTimer?.cancel();
+      _elapsedTimer = null;
+      _syncCancelToken = null;
+      _isSyncing = false;
+      _isCancelling = false;
+      notifyListeners();
+    }
+  }
+
+  /// Cancela la sincronización en curso abortando las peticiones en vuelo.
+  ///
+  /// La lista previa se conserva intacta y no se marca error: el llamador
+  /// debe leer [syncWasCancelled] para mostrar un aviso neutro.
+  Future<void> cancelSync() async {
+    if (!_isSyncing || _isCancelling) return;
+    _isCancelling = true;
+    notifyListeners();
+    try {
+      _syncCancelToken?.cancel('Usuario canceló la sincronización');
+    } catch (_) {
+      // Cancelar dos veces o con el token ya liberado no es error.
     }
   }
 
@@ -153,6 +237,14 @@ class PersonaProvider extends ChangeNotifier {
   /// lo haya descargado. Como la lista de personas no filtra por usuario, hoy eso
   /// no supone una fuga, pero no lo trates como si la supusiera.
   Future<void> clearSession() async {
+    // Si hay una sincronización en vuelo (p. ej. logout desde otra
+    // pantalla), abortarla antes de vaciar para no escribir caché después.
+    try {
+      _syncCancelToken?.cancel('Sesión cerrada');
+    } catch (_) {}
+    _elapsedTimer?.cancel();
+    _elapsedTimer = null;
+    _syncCancelToken = null;
     _personas = [];
     _byCodigoSolapin = {};
     _bySolapin = {};
@@ -161,9 +253,22 @@ class PersonaProvider extends ChangeNotifier {
     _error = null;
     _isLoading = false;
     _isSyncing = false;
+    _isCancelling = false;
+    _syncWasCancelled = false;
+    _syncProgress = null;
+    _syncPaginaActual = 0;
+    _syncTotalPaginas = 0;
+    _syncRecibidos = 0;
+    _syncElapsed = Duration.zero;
     _status = PersonaListStatus.vacia;
     notifyListeners();
     await _repository.clearSession();
+  }
+
+  @override
+  void dispose() {
+    _elapsedTimer?.cancel();
+    super.dispose();
   }
 
   String _mapError(Object error) {

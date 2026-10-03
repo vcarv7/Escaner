@@ -43,8 +43,16 @@ class ApiClient {
 
   Dio get dio => _dio;
 
-  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters}) {
-    return _dio.get<T>(path, queryParameters: queryParameters);
+  Future<Response<T>> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    CancelToken? cancelToken,
+  }) {
+    return _dio.get<T>(
+      path,
+      queryParameters: queryParameters,
+      cancelToken: cancelToken,
+    );
   }
 
   Future<Response<T>> post<T>(String path, {dynamic data}) {
@@ -117,6 +125,7 @@ class _RetryInterceptor extends Interceptor {
   /// operador ve la app "colgada" y no sabe si crasheó o si está trabajando.
   /// Un 5xx en cambio sí es transitorio y el reintento suele resolverlo.
   bool _shouldRetry(DioException err) {
+    if (err.type == DioExceptionType.cancel) return false;
     return err.response?.statusCode != null && err.response!.statusCode! >= 500;
   }
 }

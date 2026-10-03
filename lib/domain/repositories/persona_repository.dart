@@ -1,4 +1,16 @@
+import 'package:dio/dio.dart';
 import '../entities/persona.dart';
+
+/// Progreso de la sincronización por páginas.
+///
+/// Se define en dominio para no duplicar la firma entre datasource,
+/// repositorio y provider. `paginaActual` es 1-based.
+typedef SyncProgressCallback =
+    void Function({
+      required int paginaActual,
+      required int totalPaginas,
+      required int recibidos,
+    });
 
 class PersonaSyncResult {
   final List<Persona> personas;
@@ -16,7 +28,10 @@ class PersonaSyncResult {
 
 abstract class PersonaRepository {
   Future<List<Persona>> getAllPersonas({bool forceRefresh = false});
-  Future<PersonaSyncResult> syncPersonas();
+  Future<PersonaSyncResult> syncPersonas({
+    SyncProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  });
   Future<Persona?> findByCodigoSolapin(String codigo);
   Future<Persona?> findBySolapin(String solapin);
   Future<bool> hasCache();

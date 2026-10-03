@@ -30,18 +30,22 @@ class PersonaApiDatasource {
 
   PersonaApiDatasource(this._apiClient);
 
-  /// Timeout total por página. Dio ya corta en la conexión y en la recepción
-  /// con los timeouts de [ApiConstants]; este margen cubre el tiempo total de la
-  /// llamada, incluida la estancia en la cola del cliente de Dio.
-  static const Duration _requestTimeout = Duration(seconds: 30);
-
   /// Descarga todas las personas en 3 fases:
   ///  1. La página 1 va sola: es la única que trae `count` y por lo tanto
   ///     cuántas páginas existen.
   ///  2. Las páginas restantes se piden en lotes de [ApiConstants.personasSyncConcurrency].
   ///  3. Los resultados se aplanan en orden de página, no de llegada.
-  Future<PersonaSyncResult> syncAllPersonas({bool onlyActive = true}) async {
-    final primera = await _cargarPagina(1, onlyActive);
+  ///
+  /// Reporta progreso por lote vía [onProgress] y aborta todo con
+  /// [cancelToken] (un solo token compartido cancela las 6 en vuelo).
+  /// No hay timeout propio: valen los de Dio (60s connect / 90s receive),
+  /// que ya contemplan el peso de las fotos.
+  Future<PersonaSyncResult> syncAllPersonas({
+    bool onlyActive = true,
+    SyncProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final primera = await _cargarPagina(1, onlyActive, cancelToken);
     final totalPages = calcularTotalPages(
       primera.totalCount,
       primera.registrosRecibidos,
@@ -49,16 +53,26 @@ class PersonaApiDatasource {
     );
 
     final Map<int, List<Persona>> porPagina = {1: primera.personas};
+    onProgress?.call(
+      paginaActual: 1,
+      totalPaginas: totalPages,
+      recibidos: primera.personas.length,
+    );
 
     for (var inicio = 2; inicio <= totalPages; inicio += ApiConstants.personasSyncConcurrency) {
       final lote = <Future<void>>[];
       for (var p = inicio; p < inicio + ApiConstants.personasSyncConcurrency && p <= totalPages; p++) {
         lote.add(() async {
-          final pagina = await _cargarPagina(p, onlyActive);
+          final pagina = await _cargarPagina(p, onlyActive, cancelToken);
           porPagina[p] = pagina.personas;
         }());
       }
       await Future.wait(lote);
+      onProgress?.call(
+        paginaActual: porPagina.length.clamp(1, totalPages),
+        totalPaginas: totalPages,
+        recibidos: porPagina.values.fold(0, (acc, l) => acc + l.length),
+      );
     }
 
     final allPersonas = aplanarPaginas(porPagina, totalPages);
@@ -120,7 +134,11 @@ class PersonaApiDatasource {
     );
   }
 
-  Future<_PaginaPersonas> _cargarPagina(int page, bool onlyActive) async {
+  Future<_PaginaPersonas> _cargarPagina(
+    int page,
+    bool onlyActive,
+    CancelToken? cancelToken,
+  ) async {
     final queryParams = <String, dynamic>{
       'page': page,
       'page_size': ApiConstants.defaultPageSize,
@@ -131,14 +149,18 @@ class PersonaApiDatasource {
 
     Response<dynamic> response;
     try {
-      response = await _apiClient
-          .get(ApiConstants.personas, queryParameters: queryParams)
-          .timeout(_requestTimeout, onTimeout: () {
-        throw AppException.timeout('La descarga de personas tardó más de $_requestTimeout');
-      });
-    } on TimeoutException {
-      throw AppException.timeout('La descarga de personas tardó más de $_requestTimeout');
+      // Sin `.timeout()` propio: valen connectTimeout/receiveTimeout de Dio
+      // (60/90s) porque las fotos pesan. Un timeout extra de 30s mataba la
+      // primera página y mostraba un mensaje con el Duration crudo.
+      response = await _apiClient.get(
+        ApiConstants.personas,
+        queryParameters: queryParams,
+        cancelToken: cancelToken,
+      );
     } on DioException catch (e) {
+      // Cancelación: propagar tal cual para que el provider la distinga de
+      // un error y no la pinte en rojo.
+      if (e.type == DioExceptionType.cancel) rethrow;
       throw AppException.fromDioException(e);
     }
 

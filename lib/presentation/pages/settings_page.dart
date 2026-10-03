@@ -6,6 +6,7 @@ import '../providers/settings_provider.dart';
 import '../providers/persona_provider.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/dialogs/logout_dialog.dart';
+import '../widgets/sync_progress_inline.dart';
 import '../widgets/overlay/overlay_message.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -135,46 +136,26 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
-              key: const ValueKey('settings_sync_button'),
-              onPressed: (personaProvider.isSyncing || !haySesion)
-                  ? null
-                  : () async {
-                      final success = await personaProvider.syncPersonas();
-                      if (!context.mounted) return;
-                      if (success) {
-                        OverlayMessage.success(
-                          context,
-                          'Sincronización completada (${personaProvider.totalCount} personas)',
-                        );
-                      } else {
-                        OverlayMessage.error(
-                          context,
-                          personaProvider.error ?? 'Error al sincronizar',
-                        );
-                      }
-                    },
-              icon: personaProvider.isSyncing
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.sync_rounded),
-              label: Text(
-                personaProvider.isSyncing
-                    ? 'Sincronizando...'
-                    : haySesion
-                    ? 'Sincronizar ahora'
-                    : 'Inicia sesión para sincronizar',
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
+            child: personaProvider.isSyncing
+                ? const SyncProgressInline()
+                : OutlinedButton.icon(
+                    key: const ValueKey('settings_sync_button'),
+                    onPressed: !haySesion
+                        ? null
+                        : () => _startSync(context, personaProvider),
+                    icon: const Icon(Icons.sync_rounded),
+                    label: Text(
+                      haySesion
+                          ? 'Sincronizar ahora'
+                          : 'Inicia sesión para sincronizar',
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
           ),
           if (!haySesion) ...[
             const SizedBox(height: 8),
@@ -218,6 +199,16 @@ class SettingsPage extends StatelessWidget {
                 color: colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
+          ] else if (personaProvider.lastSync == null &&
+              personaProvider.error == null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Aún no hay personas descargadas. Pulsa Sincronizar.',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
           ],
           if (personaProvider.error != null) ...[
             const SizedBox(height: 8),
@@ -241,6 +232,35 @@ class SettingsPage extends StatelessWidget {
 
   String _formatDateTime(DateTime dt) {
     return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  /// Inicia la sincronización. El progreso es inline (la card muestra la
+  /// barra en lugar del botón), así que aquí solo se espera el resultado y
+  /// se muestra el mensaje que corresponda: éxito, cancelación (neutro) o
+  /// error (rojo + fila inline en la card).
+  Future<void> _startSync(
+    BuildContext context,
+    PersonaProvider personaProvider,
+  ) async {
+    final success = await personaProvider.syncPersonas();
+    if (!context.mounted) return;
+
+    if (success) {
+      OverlayMessage.success(
+        context,
+        'Sincronización completada (${personaProvider.totalCount} personas)',
+      );
+    } else if (personaProvider.syncWasCancelled) {
+      OverlayMessage.info(
+        context,
+        'Sincronización cancelada. Se mantiene la lista anterior.',
+      );
+    } else {
+      OverlayMessage.error(
+        context,
+        personaProvider.error ?? 'Error al sincronizar',
+      );
+    }
   }
 
   Widget _buildThemeCard(SettingsProvider settings, ColorScheme colorScheme) {

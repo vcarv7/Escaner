@@ -2,7 +2,7 @@ import '../../domain/repositories/persona_repository.dart';
 import '../../domain/entities/persona.dart';
 import '../datasources/persona_api_datasource.dart';
 import '../services/persona_cache_service.dart';
-import '../../core/errors/app_exception.dart';
+import 'package:dio/dio.dart';
 
 class PersonaRepositoryImpl implements PersonaRepository {
   final PersonaApiDatasource _apiDatasource;
@@ -14,6 +14,15 @@ class PersonaRepositoryImpl implements PersonaRepository {
 
   PersonaRepositoryImpl(this._apiDatasource, this._cacheService);
 
+  /// Solo memoria → disco. Jamás red.
+  ///
+  /// La descarga es exclusivamente manual (botón Sincronizar →
+  /// [syncPersonas]). Ni el login, ni el arranque, ni el escaneo deben
+  /// generar tráfico: con disco vacío se devuelve `[]` y el provider queda
+  /// en `vacia` hasta que el operador pulse el botón.
+  ///
+  /// `forceRefresh` se conserva por compatibilidad (mocks/tests) y solo
+  /// significa "releer disco e índices", nunca "descargar".
   @override
   Future<List<Persona>> getAllPersonas({bool forceRefresh = false}) async {
     if (!forceRefresh && _cachedPersonas != null && _cachedPersonas!.isNotEmpty) {
@@ -21,31 +30,26 @@ class PersonaRepositoryImpl implements PersonaRepository {
     }
 
     final cache = await _cacheService.loadCache();
-    if (cache.isNotEmpty && !forceRefresh) {
+    if (cache.isNotEmpty) {
       _cachedPersonas = cache;
       _buildIndexes(cache);
       return _cachedPersonas!;
     }
 
-    try {
-      return await syncPersonas().then((_) => _cachedPersonas ?? []);
-    } on AppException {
-      if (forceRefresh && _cachedPersonas != null && _cachedPersonas!.isNotEmpty) {
-        return _cachedPersonas!;
-      }
-      final diskCache = await _cacheService.loadCache();
-      if (diskCache.isNotEmpty) {
-        _cachedPersonas = diskCache;
-        _buildIndexes(diskCache);
-        return _cachedPersonas!;
-      }
-      rethrow;
-    }
+    _cachedPersonas = [];
+    return _cachedPersonas!;
   }
 
   @override
-  Future<PersonaSyncResult> syncPersonas() async {
-    final result = await _apiDatasource.syncAllPersonas(onlyActive: true);
+  Future<PersonaSyncResult> syncPersonas({
+    SyncProgressCallback? onProgress,
+    CancelToken? cancelToken,
+  }) async {
+    final result = await _apiDatasource.syncAllPersonas(
+      onlyActive: true,
+      onProgress: onProgress,
+      cancelToken: cancelToken,
+    );
 
     await _cacheService.saveCacheWithMeta(
       result.personas,
