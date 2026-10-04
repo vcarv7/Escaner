@@ -41,10 +41,6 @@ class PersonaProvider extends ChangeNotifier {
   int _syncPaginaActual = 0;
   int _syncTotalPaginas = 0;
   int _syncRecibidos = 0;
-
-  /// Registros del último sync descartados por venir sin código válido.
-  /// Solo informativo para la UI; en carga desde disco se desconoce (0).
-  int _syncDescartados = 0;
   Duration _syncElapsed = Duration.zero;
   DateTime? _syncStartedAt;
   CancelToken? _syncCancelToken;
@@ -64,7 +60,6 @@ class PersonaProvider extends ChangeNotifier {
   int get syncPaginaActual => _syncPaginaActual;
   int get syncTotalPaginas => _syncTotalPaginas;
   int get syncRecibidos => _syncRecibidos;
-  int get syncDescartados => _syncDescartados;
   Duration get syncElapsed => _syncElapsed;
 
   /// Escanear contra una lista vacía marca a todo el mundo como inactivo
@@ -88,8 +83,6 @@ class PersonaProvider extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     _status = PersonaListStatus.cargando;
-    // Lo descartado por el último sync se desconoce al leer disco.
-    _syncDescartados = 0;
     notifyListeners();
 
     try {
@@ -125,7 +118,6 @@ class PersonaProvider extends ChangeNotifier {
     _syncPaginaActual = 0;
     _syncTotalPaginas = 0;
     _syncRecibidos = 0;
-    _syncDescartados = 0;
     _syncElapsed = Duration.zero;
     _syncStartedAt = DateTime.now();
     _syncCancelToken = CancelToken();
@@ -160,10 +152,7 @@ class PersonaProvider extends ChangeNotifier {
       );
       _personas = result.personas;
       _buildIndexes(_personas);
-      // Lo que ve el operador es lo real en disco, no el `count` del
-      // servidor (puede incluir registros sin código que se descartan).
-      _totalCount = result.personas.length;
-      _syncDescartados = result.descartados;
+      _totalCount = result.totalCount;
       _lastSync = result.syncedAt;
       _status = _personas.isNotEmpty
           ? PersonaListStatus.lista
@@ -270,7 +259,6 @@ class PersonaProvider extends ChangeNotifier {
     _syncPaginaActual = 0;
     _syncTotalPaginas = 0;
     _syncRecibidos = 0;
-    _syncDescartados = 0;
     _syncElapsed = Duration.zero;
     _status = PersonaListStatus.vacia;
     notifyListeners();
