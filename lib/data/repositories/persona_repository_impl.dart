@@ -51,11 +51,13 @@ class PersonaRepositoryImpl implements PersonaRepository {
       cancelToken: cancelToken,
     );
 
+    // El meta guarda lo real en disco, no el `count` del servidor: es lo
+    // que la UI muestra y lo que el escaneo resuelve.
     await _cacheService.saveCacheWithMeta(
       result.personas,
       SyncMeta(
         lastSync: result.syncedAt,
-        totalCount: result.totalCount,
+        totalCount: result.personas.length,
       ),
     );
 
