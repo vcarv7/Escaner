@@ -210,6 +210,17 @@ class SettingsPage extends StatelessWidget {
               ),
             ),
           ],
+          if (personaProvider.syncDescartados > 0 &&
+              personaProvider.hasPersonas) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${personaProvider.syncDescartados} registros del servidor sin código válido (no se usan).',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
           if (personaProvider.error != null) ...[
             const SizedBox(height: 8),
             Row(

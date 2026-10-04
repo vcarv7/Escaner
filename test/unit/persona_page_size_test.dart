@@ -88,4 +88,22 @@ void main() {
       expect(resultado.map((p) => p.idPersona).toList(), ['1']);
     });
   });
+
+  group('calcularDescartados', () {
+    test('3 crudos y 1 sin código → 1 descartado, 2 útiles', () {
+      // El caso real: el servidor cuenta 3 pero uno viene sin codigoSolapin
+      // y `_mapToPersona` lo descarta. El operador debe ver 2, no 3.
+      expect(PersonaApiDatasource.calcularDescartados(3, 2), 1);
+    });
+
+    test('sin brecha → 0', () {
+      expect(PersonaApiDatasource.calcularDescartados(100, 100), 0);
+      expect(PersonaApiDatasource.calcularDescartados(0, 0), 0);
+    });
+
+    test('nunca negativo aunque los números vengan raros', () {
+      expect(PersonaApiDatasource.calcularDescartados(2, 5), 0);
+      expect(PersonaApiDatasource.calcularDescartados(-1, 0), 0);
+    });
+  });
 }

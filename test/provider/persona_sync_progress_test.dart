@@ -174,4 +174,29 @@ void main() {
       expect(repo.syncCalls, 0);
     });
   });
+
+  group('PersonaProvider totalCount estable (número real)', () {
+    test('sync muestra lo descargado, no el count del servidor', () async {
+      final repo = _FakeRepo(
+        behavior: (_, _) async => PersonaSyncResult(
+          personas: [_p('1'), _p('2')],
+          totalCount: 3,
+          totalPages: 1,
+          descartados: 1,
+          syncedAt: DateTime(2026, 1, 1),
+        ),
+      );
+      final provider = PersonaProvider(
+        repository: repo,
+        cacheService: PersonaCacheService(),
+      );
+      addTearDown(provider.dispose);
+
+      final ok = await provider.syncPersonas();
+
+      expect(ok, isTrue);
+      expect(provider.totalCount, 2);
+      expect(provider.syncDescartados, 1);
+    });
+  });
 }

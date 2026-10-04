@@ -53,6 +53,7 @@ class PersonaApiDatasource {
     );
 
     final Map<int, List<Persona>> porPagina = {1: primera.personas};
+    final Map<int, int> crudosPorPagina = {1: primera.registrosRecibidos};
     onProgress?.call(
       paginaActual: 1,
       totalPaginas: totalPages,
@@ -65,6 +66,7 @@ class PersonaApiDatasource {
         lote.add(() async {
           final pagina = await _cargarPagina(p, onlyActive, cancelToken);
           porPagina[p] = pagina.personas;
+          crudosPorPagina[p] = pagina.registrosRecibidos;
         }());
       }
       await Future.wait(lote);
@@ -76,13 +78,22 @@ class PersonaApiDatasource {
     }
 
     final allPersonas = aplanarPaginas(porPagina, totalPages);
+    final crudos = crudosPorPagina.values.fold(0, (acc, n) => acc + n);
+    final descartados = calcularDescartados(crudos, allPersonas.length);
 
-    _advertirSiFaltanRegistros(allPersonas.length, primera.totalCount, totalPages);
+    _advertirSiFaltanRegistros(
+      allPersonas.length,
+      primera.totalCount,
+      totalPages,
+      descartados: descartados,
+      crudos: crudos,
+    );
 
     return PersonaSyncResult(
       personas: allPersonas,
       totalCount: primera.totalCount,
       totalPages: totalPages,
+      descartados: descartados,
       syncedAt: DateTime.now(),
     );
   }
@@ -117,12 +128,33 @@ class PersonaApiDatasource {
     return todas;
   }
 
+  /// Cuántos registros crudos se descartaron por venir sin `id` o
+  /// `codigoSolapin`. Función pura para poder testearla sin red.
+  static int calcularDescartados(int crudos, int utiles) {
+    if (crudos <= 0 || utiles >= crudos) return 0;
+    return crudos - utiles;
+  }
+
   /// _mapToPersona descarta registros sin `id` o `codigoSolapin`, así que una
   /// diferencia pequeña es esperable. Un desajuste grande significa que el
   /// backend no sirvió todas las páginas y la app quedaría con una lista
   /// incompleta creyendo que está completa.
-  static void _advertirSiFaltanRegistros(int recibidos, int totalCount, int totalPages) {
+  static void _advertirSiFaltanRegistros(
+    int recibidos,
+    int totalCount,
+    int totalPages, {
+    int descartados = 0,
+    int crudos = 0,
+  }) {
     if (totalCount <= 0) return;
+
+    // Resumen siempre visible: aunque la brecha sea < 5% ya queda registrada
+    // (antes pasaba en silencio y el operador veía bailar el número).
+    app_logger.log.info(
+      'Sync personas: $recibidos útiles de $totalCount en servidor '
+      '($crudos crudos, $descartados sin código válido) en $totalPages páginas.',
+    );
+
     if (recibidos >= totalCount) return;
 
     final faltan = totalCount - recibidos;
