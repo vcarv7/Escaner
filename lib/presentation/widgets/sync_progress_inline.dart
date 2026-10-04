@@ -45,7 +45,7 @@ class SyncProgressInline extends StatelessWidget {
             const SizedBox(height: 8),
             if (provider.isCancelling)
               Text('Cancelando...', style: textStyle)
-            else if (conectando) ...[
+            else if (conectando)
               Semantics(
                 liveRegion: true,
                 label: 'Conectando con el servidor',
@@ -53,12 +53,7 @@ class SyncProgressInline extends StatelessWidget {
                   'Conectando con el servidor...',
                   style: textStyle,
                 ),
-              ),
-              Text(
-                'Puede tardar 1-2 minutos por las fotos.',
-                style: textStyle,
-              ),
-            ] else
+              ) else
               Semantics(
                 liveRegion: true,
                 label:

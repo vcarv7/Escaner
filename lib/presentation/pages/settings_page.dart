@@ -157,20 +157,6 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
           ),
-          if (!haySesion) ...[
-            const SizedBox(height: 8),
-            Semantics(
-              label:
-                  'Sin sesión activa no puedes sincronizar. El escaneo sigue funcionando.',
-              child: Text(
-                'El escaneo sigue funcionando con la lista local.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 12),
           if (personaProvider.lastSync != null) ...[
             _divider(colorScheme),
@@ -194,27 +180,6 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               '${personaProvider.totalCount} personas en caché local',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ] else if (personaProvider.lastSync == null &&
-              personaProvider.error == null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Aún no hay personas descargadas. Pulsa Sincronizar.',
-              style: TextStyle(
-                fontSize: 13,
-                color: colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-          ],
-          if (personaProvider.syncDescartados > 0 &&
-              personaProvider.hasPersonas) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${personaProvider.syncDescartados} registros del servidor sin código válido (no se usan).',
               style: TextStyle(
                 fontSize: 13,
                 color: colorScheme.onSurface.withValues(alpha: 0.6),
