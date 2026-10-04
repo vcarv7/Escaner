@@ -19,7 +19,7 @@ class HomeNavBar extends StatelessWidget {
         NavigationDestination(
           icon: Icon(Icons.qr_code_scanner_outlined),
           selectedIcon: Icon(Icons.qr_code_scanner),
-          label: 'Scans',
+          label: 'Escáner',
         ),
         NavigationDestination(
           icon: Icon(Icons.settings_outlined),

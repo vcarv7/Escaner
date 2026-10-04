@@ -207,7 +207,6 @@ class _SolapinesListState extends State<SolapinesList> {
   Widget _buildList(BuildContext context, List<ScanRecord> records) {
     if (records.isEmpty) {
       return const EmptyState(
-        icon: Icons.qr_code_scanner,
         title: 'Sin resultados',
         subtitle: 'No hay escaneos para los filtros seleccionados',
       );

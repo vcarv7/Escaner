@@ -47,7 +47,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Escáner'),
+          const Text('SIGA'),
           if (eventoActual != null)
             Text(
               eventoActual.displayName,

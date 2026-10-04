@@ -1,5 +1,5 @@
 class AppConstants {
-  static const String appVersion = '0.8.5';
+  static const String appVersion = '0.8.7';
 
   /// Nombre de la app. Debe coincidir con `android:label` del manifest y con
   /// el título del login. Hay un test que verifica que no se desincronicen.

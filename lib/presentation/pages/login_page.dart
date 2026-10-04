@@ -144,14 +144,14 @@ class _LoginPageState extends State<LoginPage> {
         Container(
           width: 80,
           height: 80,
-          decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            Icons.qr_code_scanner_rounded,
-            size: 40,
-            color: colorScheme.onPrimaryContainer,
+          decoration: const BoxDecoration(shape: BoxShape.circle),
+          clipBehavior: Clip.antiAlias,
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+            semanticLabel: 'SIGA',
           ),
         ),
         const SizedBox(height: 24),

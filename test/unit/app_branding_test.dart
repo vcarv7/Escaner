@@ -7,6 +7,11 @@ import 'package:escaner_1/core/constants/app_constants.dart';
 import 'package:escaner_1/presentation/pages/login_page.dart';
 import 'package:escaner_1/presentation/providers/auth_provider.dart';
 import 'package:escaner_1/presentation/widgets/scanner/scanner_widget.dart';
+import 'package:escaner_1/presentation/widgets/home_app_bar.dart';
+import 'package:escaner_1/presentation/widgets/home_nav_bar.dart';
+import 'package:escaner_1/presentation/providers/evento_provider.dart';
+import 'package:escaner_1/presentation/providers/puerta_provider.dart';
+import 'package:escaner_1/presentation/providers/settings_provider.dart';
 
 /// Stub mínimo: LoginPage solo lee `isLoading` al construir. `Mock` no sirve
 /// porque `noSuchMethod` devuelve null y `isLoading` es bool no-nullable.
@@ -70,6 +75,58 @@ void main() {
       await tester.pump();
 
       expect(find.text(AppConstants.appName), findsOneWidget);
+    });
+
+    testWidgets('el login muestra el logo de la app', (tester) async {
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AuthProvider>.value(
+          value: FakeAuthProvider(),
+          child: const MaterialApp(home: LoginPage()),
+        ),
+      );
+      await tester.pump();
+
+      final imagen = tester.widget<Image>(find.byType(Image));
+      expect(imagen.semanticLabel, 'SIGA');
+      expect(find.byIcon(Icons.qr_code_scanner_rounded), findsNothing);
+    });
+
+    testWidgets('el AppBar muestra SIGA', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MultiProvider(
+            providers: [
+              ChangeNotifierProvider(create: (_) => EventoProvider()),
+              ChangeNotifierProvider(create: (_) => SettingsProvider()),
+              ChangeNotifierProvider(create: (_) => PuertaProvider()),
+            ],
+            child: Scaffold(
+              appBar: HomeAppBar(onMenuPressed: () {}, showActions: false),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('SIGA'), findsOneWidget);
+      expect(find.text('Escáner'), findsNothing);
+    });
+
+    testWidgets('la navegación muestra Escáner y no Scans', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            bottomNavigationBar: HomeNavBar(
+              selectedIndex: 0,
+              onDestinationSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Escáner'), findsOneWidget);
+      expect(find.text('Scans'), findsNothing);
     });
   });
 

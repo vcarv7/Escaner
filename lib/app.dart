@@ -26,7 +26,7 @@ class App extends StatelessWidget {
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {
           return MaterialApp(
-            title: 'Escáner',
+            title: 'SIGA',
             theme: AppTheme.getTheme(false),
             darkTheme: AppTheme.getTheme(true),
             themeMode: settings.isDarkTheme ? ThemeMode.dark : ThemeMode.light,

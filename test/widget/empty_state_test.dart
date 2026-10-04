@@ -4,12 +4,11 @@ import 'package:escaner_1/presentation/widgets/common/empty_state.dart';
 
 void main() {
   group('EmptyState Widget', () {
-    testWidgets('displays icon with correct size', (WidgetTester tester) async {
+    testWidgets('muestra título y subtítulo sin icono', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: EmptyState(
-              icon: Icons.inbox,
               title: 'Title',
               subtitle: 'Subtitle',
             ),
@@ -17,11 +16,9 @@ void main() {
         ),
       );
 
-      final iconFinder = find.byIcon(Icons.inbox);
-      expect(iconFinder, findsOneWidget);
-
-      final iconWidget = tester.widget<Icon>(iconFinder);
-      expect(iconWidget.size, equals(48));
+      expect(find.text('Title'), findsOneWidget);
+      expect(find.text('Subtitle'), findsOneWidget);
+      expect(find.byType(Icon), findsNothing);
     });
 
     testWidgets('displays title text', (WidgetTester tester) async {
@@ -29,7 +26,6 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyState(
-              icon: Icons.inbox,
               title: 'No hay elementos',
               subtitle: 'Subtitle',
             ),
@@ -45,7 +41,6 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyState(
-              icon: Icons.inbox,
               title: 'Title',
               subtitle: 'Escanea algunos Solapines',
             ),
@@ -56,30 +51,11 @@ void main() {
       expect(find.text('Escanea algunos Solapines'), findsOneWidget);
     });
 
-    testWidgets('applies custom icon color', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: EmptyState(
-              icon: Icons.search_off,
-              title: 'Title',
-              subtitle: 'Subtitle',
-              iconColor: Colors.red,
-            ),
-          ),
-        ),
-      );
-
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.search_off));
-      expect(iconWidget.color?.toARGB32(), equals(Colors.red.withAlpha(204).toARGB32()));
-    });
-
     testWidgets('is centered in parent', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: EmptyState(
-              icon: Icons.inbox,
               title: 'Title',
               subtitle: 'Subtitle',
             ),
@@ -95,7 +71,6 @@ void main() {
         const MaterialApp(
           home: Scaffold(
             body: EmptyState(
-              icon: Icons.inbox,
               title: 'Title',
               subtitle: 'Subtitle',
             ),
@@ -104,7 +79,7 @@ void main() {
       );
 
       expect(find.byType(Column), findsOneWidget);
-      expect(find.byType(Icon), findsOneWidget);
+      expect(find.byType(Icon), findsNothing);
       expect(find.byType(Text), findsNWidgets(2));
     });
   });
